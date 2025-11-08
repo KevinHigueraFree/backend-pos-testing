@@ -1,0 +1,133 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Electronics",
+      "products": []
+    },
+    {
+      "id": 2,
+      "name": "Computers",
+      "products": []
+    },
+    {
+      "id": 3,
+      "name": "Accessories",
+      "products": []
+    },
+    {
+      "id": 4,
+      "name": "Clothing",
+      "products": []
+    },
+    {
+      "id": 5,
+      "name": "Books",
+      "products": []
+    }
+  ],
+  "categoriesWithoutProducts": [
+    {
+      "id": 1,
+      "name": "Electronics"
+    },
+    {
+      "id": 2,
+      "name": "Computers"
+    },
+    {
+      "id": 3,
+      "name": "Accessories"
+    },
+    {
+      "id": 4,
+      "name": "Clothing"
+    },
+    {
+      "id": 5,
+      "name": "Books"
+    }
+  ],
+  "createDtos": [
+    {
+      "name": "New Electronics"
+    },
+    {
+      "name": "New Computers"
+    },
+    {
+      "name": "New Accessories"
+    }
+  ],
+  "updateDtos": [
+    {
+      "name": "Updated Electronics"
+    },
+    {
+      "name": "Updated Computers"
+    },
+    {
+      "name": "Updated Accessories"
+    }
+  ],
+  "updatedCategories": [
+    {
+      "id": 1,
+      "name": "Updated Electronics"
+    },
+    {
+      "id": 2,
+      "name": "Updated Computers"
+    },
+    {
+      "id": 3,
+      "name": "Updated Accessories"
+    }
+  ],
+  "categoriesWithProducts": [
+    {
+      "id": 1,
+      "name": "Electronics",
+      "products": [
+        {
+          "id": 1,
+          "name": "Laptop Gaming",
+          "price": 1500,
+          "inventory": 25,
+          "categoryId": 1,
+          "image": "laptop-gaming.jpg"
+        },
+        {
+          "id": 2,
+          "name": "Smartphone Pro",
+          "price": 800,
+          "inventory": 50,
+          "categoryId": 1,
+          "image": "smartphone-pro.jpg"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Computers",
+      "products": [
+        {
+          "id": 4,
+          "name": "Gaming Mouse",
+          "price": 80,
+          "inventory": 75,
+          "categoryId": 2,
+          "image": "gaming-mouse.jpg"
+        },
+        {
+          "id": 5,
+          "name": "Mechanical Keyboard",
+          "price": 120,
+          "inventory": 60,
+          "categoryId": 2,
+          "image": "keyboard.jpg"
+        }
+      ]
+    }
+  ]
+}

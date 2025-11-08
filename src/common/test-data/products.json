@@ -1,0 +1,106 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Laptop Gaming",
+      "price": 1500,
+      "inventory": 25,
+      "categoryId": 1,
+      "image": "laptop-gaming.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Smartphone Pro",
+      "price": 800,
+      "inventory": 50,
+      "categoryId": 1,
+      "image": "smartphone-pro.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Wireless Headphones",
+      "price": 200,
+      "inventory": 100,
+      "categoryId": 1,
+      "image": "headphones.jpg"
+    },
+    {
+      "id": 4,
+      "name": "Gaming Mouse",
+      "price": 80,
+      "inventory": 75,
+      "categoryId": 2,
+      "image": "gaming-mouse.jpg"
+    },
+    {
+      "id": 5,
+      "name": "Mechanical Keyboard",
+      "price": 120,
+      "inventory": 60,
+      "categoryId": 2,
+      "image": "keyboard.jpg"
+    }
+  ],
+  "updatedCategories": [
+    {
+      "id": 1,
+      "name": "Updated Laptop",
+      "price": 1800,
+      "inventory": 15,
+      "categoryId": 1,
+      "image": "updated-laptop.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Updated Smartphone",
+      "price": 850,
+      "inventory": 40,
+      "categoryId": 1,
+      "image": "updated-smartphone.jpg"
+    }
+  ],
+  "createProductDtos": [
+    {
+      "name": "New Laptop",
+      "price": 2000,
+      "inventory": 10,
+      "categoryId": 1
+    },
+    {
+      "name": "New Smartphone",
+      "price": 900,
+      "inventory": 30,
+      "categoryId": 1
+    }
+  ],
+  "updateProductDtos": [
+    {
+      "name": "Updated Laptop",
+      "price": 1800,
+      "inventory": 15,
+      "categoryId": 1,
+      "image": "updated-laptop.jpg"
+    },
+    {
+      "name": "Updated Smartphone",
+      "price": 850,
+      "inventory": 40,
+      "categoryId": 1,
+      "image": "updated-smartphone.jpg"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Electronics"
+    },
+    {
+      "id": 2,
+      "name": "Computers"
+    },
+    {
+      "id": 3,
+      "name": "Accessories"
+    }
+  ]
+}

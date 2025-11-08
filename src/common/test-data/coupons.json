@@ -1,0 +1,89 @@
+{
+  "coupons": [
+    {
+      "id": 1,
+      "name": "navidad",
+      "percentage": 20,
+      "expirationDate": "2025-11-25"
+    },
+    {
+      "id": 2,
+      "name": "Revolucion MX",
+      "percentage": 50,
+      "expirationDate": "2025-11-20"
+    },
+    {
+      "id": 3,
+      "name": "Friday",
+      "percentage": 80,
+      "expirationDate": "2025-10-25"
+    },
+    {
+      "id": 4,
+      "name": "Black Friday",
+      "percentage": 75,
+      "expirationDate": "2025-11-29"
+    },
+    {
+      "id": 5,
+      "name": "Cyber Monday",
+      "percentage": 60,
+      "expirationDate": "2025-12-02"
+    }
+  ],
+  "createCouponDtos": [
+    {
+      "name": "navidad",
+      "percentage": 20,
+      "expirationDate": "2025-11-25"
+    },
+    {
+      "name": "Revolucion MX",
+      "percentage": 50,
+      "expirationDate": "2025-11-20"
+    },
+    {
+      "name": "New Year",
+      "percentage": 30,
+      "expirationDate": "2025-12-31"
+    }
+  ],
+  "updateCouponDtos": [
+    {
+      "name": "Updated navidad",
+      "percentage": 10,
+      "expirationDate": "2025-11-20"
+    },
+    {
+      "name": "Updated Revolucion MX",
+      "percentage": 40,
+      "expirationDate": "2025-11-15"
+    },
+    {
+      "name": "Updated Friday",
+      "percentage": 70,
+      "expirationDate": "2025-10-20"
+    }
+  ],
+  "updatedCoupons": [
+    {
+      "id": 1,
+      "name": "Updated navidad",
+      "percentage": 10,
+      "expirationDate": "2025-11-20"
+    },
+    {
+      "id": 2,
+      "name": "Updated Revolucion MX",
+      "percentage": 40,
+      "expirationDate": "2025-11-15"
+    },
+    {
+      "id": 3,
+      "name": "Updated Friday",
+      "percentage": 70,
+      "expirationDate": "2025-10-20"
+    }
+  ]
+}
+
