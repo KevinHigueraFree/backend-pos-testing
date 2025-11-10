@@ -109,7 +109,7 @@ describe('CategoriesService', () => {
 
       // Act & Assert
       await expect(service.findOne(categoryId)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(categoryId)).rejects.toThrow('The category does not found');
+      await expect(service.findOne(categoryId)).rejects.toThrow(`The Category with ID ${categoryId} does not found`);
     });
   });
 
@@ -162,7 +162,7 @@ describe('CategoriesService', () => {
       // Assert
       expect(service.findOne).toHaveBeenCalledWith(categoryId);
       expect(mockRepository.remove).toHaveBeenCalledWith(categoryToRemove);
-      expect(result).toBe('Removed Category');
+      expect(result).toBe(`The Category with ID ${categoryId} was removed`);
     });
 
     it('should throw NotFoundException when removing non-existent category', async () => {

@@ -18,13 +18,13 @@ export class ProductsService {
     const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId })
     if (!category) {
       let errors: string[] = [];
-      errors.push(`The category with ID ${createProductDto.categoryId} does not found`);
+      errors.push(`The Category with ID ${createProductDto.categoryId} does not found`);
       throw new NotFoundException(errors);
     }
 
     return this.productRepository.save({
       ...createProductDto,
-      category
+      category: category
     })
 
   }
@@ -51,7 +51,7 @@ export class ProductsService {
 
     //products y total es para ponerle nombre a los datos a el numero. de los regsitros contados
     const [products, total] = await this.productRepository.findAndCount(options)
-    return {total, products }
+    return { total, products }
   }
 
   async findOne(id: number) {
@@ -66,7 +66,7 @@ export class ProductsService {
 
     if (!product) {
       let errors: string[] = [];
-      errors.push(`The product with ID ${id} does not found`);
+      errors.push(`The Product with ID ${id} does not found`);
       throw new NotFoundException(errors);
     }
 
@@ -81,7 +81,7 @@ export class ProductsService {
       const category = await this.categoryRepository.findOneBy({ id: updateProductDto.categoryId })
       if (!category) {
         let errors: string[] = []
-        errors.push(`The category with ID ${updateProductDto.categoryId} does not found`);
+        errors.push(`The Category with ID ${updateProductDto.categoryId} does not found`);
         throw new NotFoundException(errors);
       }
       product.category = category

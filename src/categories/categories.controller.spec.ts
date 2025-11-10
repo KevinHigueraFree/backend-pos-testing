@@ -95,7 +95,7 @@ describe('CategoriesController', () => {
     it('should handle NotFoundException', async () => {
       // Arrange
       const categoryId = '999';
-      mockCategoriesService.findOne.mockRejectedValue(new NotFoundException('The category does not found'));
+      mockCategoriesService.findOne.mockRejectedValue(new NotFoundException(`The Category with ID ${categoryId} does not found`));
 
       // Act & Assert
       await expect(controller.findOne(categoryId)).rejects.toThrow(NotFoundException);
@@ -149,7 +149,7 @@ describe('CategoriesController', () => {
     it('should remove a category', async () => {
       // Arrange
       const categoryId = '1';
-      const expectedMessage = 'Removed Category';
+      const expectedMessage = `The Category with ID ${categoryId} was removed`;
       mockCategoriesService.remove.mockResolvedValue(expectedMessage);
 
       // Act

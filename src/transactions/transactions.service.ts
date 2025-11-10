@@ -40,7 +40,7 @@ export class TransactionsService {
         const product = await transactionEntityManager.findOneBy(Product, { id: contents.productId })
         let errors: string[] = [];
         if (!product) {
-          errors.push(`The product with ID ${contents.productId} does not found`);
+          errors.push(`The Product with ID ${contents.productId} does not found`);
           throw new NotFoundException(errors)
         }
 

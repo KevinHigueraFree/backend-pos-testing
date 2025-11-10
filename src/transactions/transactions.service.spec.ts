@@ -208,7 +208,7 @@ describe('TransactionsService', () => {
                 expect(error.response).toMatchObject({
                     statusCode: 404,
                     error: 'Not Found',
-                    message: expect.arrayContaining([`The product with ID ${productId} does not found`])
+                    message: expect.arrayContaining([`The Product with ID ${productId} does not found`])
                 })
             }
         })

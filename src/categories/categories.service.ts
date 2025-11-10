@@ -22,7 +22,7 @@ export class CategoriesService {
   async findOne(id: number) {
     const category = await this.categoryRepository.findOneBy({ id: id });
     if (!category) {
-      throw new NotFoundException('The category does not found');
+      throw new NotFoundException(`The Category with ID ${id} does not found`);
     }
     return category;
   }
@@ -36,6 +36,6 @@ export class CategoriesService {
   async remove(id: number) {
     const category = await this.findOne(id);
     await this.categoryRepository.remove(category)
-    return "Removed Category"
+    return `The Category with ID ${id} was removed`
   }
 }

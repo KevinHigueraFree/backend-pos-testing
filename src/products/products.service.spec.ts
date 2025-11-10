@@ -115,7 +115,7 @@ describe('ProductsService', () => {
                 expect(error.response).toMatchObject({
                     statusCode: 404,
                     error: 'Not Found',
-                    message: expect.arrayContaining([`The category with ID ${categoryId} does not found`])
+                    message: expect.arrayContaining([`The Category with ID ${categoryId} does not found`])
                 });
             }
 
@@ -283,7 +283,7 @@ describe('ProductsService', () => {
                 await productsService.findOne(productId);
             } catch (error) {
                 expect(error).toBeInstanceOf(NotFoundException);
-                expect(error.response.message).toContain(`The product with ID ${productId} does not found`);
+                expect(error.response.message).toContain(`The Product with ID ${productId} does not found`);
             }
         });
     });
@@ -345,7 +345,7 @@ describe('ProductsService', () => {
             // Arrange
             const productId = 998;
             const updateProductDto: UpdateProductDto = productCreateDtos[0]
-            const notFoundError = new NotFoundException([`The product with ID ${productId} does not found`]);
+            const notFoundError = new NotFoundException([`The Product with ID ${productId} does not found`]);
             const findOneSpy = jest.spyOn(productsService, 'findOne').mockRejectedValue(notFoundError);
 
             // Act
@@ -358,7 +358,7 @@ describe('ProductsService', () => {
                 await productsService.update(productId, updateProductDto);
             } catch (error) {
                 expect(error).toBeInstanceOf(NotFoundException);
-                expect(error.response.message).toStrictEqual([`The product with ID ${productId} does not found`]);
+                expect(error.response.message).toStrictEqual([`The Product with ID ${productId} does not found`]);
             }
 
             expect(findOneSpy).toHaveBeenCalledWith(productId);
@@ -409,7 +409,7 @@ describe('ProductsService', () => {
         it('should throw NotFoundException when product does not found', async () => {
             // Arrange
             const productId = 999;
-            const notFoundError = new NotFoundException(`The product with ID ${productId} does not found`);
+            const notFoundError = new NotFoundException(`The Product with ID ${productId} does not found`);
 
             const findOneSpy = jest.spyOn(productsService, 'findOne').mockRejectedValue(notFoundError);
 
