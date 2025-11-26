@@ -115,7 +115,7 @@ describe('CouponsService', () => {
                     await couponsService.findOne(couponId);
                 } catch (error) {
                     expect(error).toBeInstanceOf(NotFoundException);
-                    expect(error.response.message).toContain(`The coupon with ID: ${couponId} does not found`);
+                    expect(error.response.message).toContain(`The Coupon with ID: ${couponId} does not found`);
                 }
                 expect(mockCouponRepository.findOneBy).toHaveBeenCalledWith({ id: couponId })
                 // expect(result).toEqual('')
@@ -141,7 +141,7 @@ describe('CouponsService', () => {
         it('Should return exception because does not found the coupon', async () => {
             const couponId = 999
             const updateCouponDto = couponUpdateDtos[0]
-            const notFoundException = new NotFoundException(`The coupon with ID: ${couponId} does not found`);
+            const notFoundException = new NotFoundException(`The Coupon with ID: ${couponId} does not found`);
             const findOneSpy = jest.spyOn(couponsService, 'findOne').mockRejectedValue(notFoundException);
 
             //Act y Assert
@@ -170,7 +170,7 @@ describe('CouponsService', () => {
         })
         it('Should return exception because does not found the coupon', async () => {
             const couponId = 999
-            const notFoundException = new NotFoundException(`The coupon with ID: ${couponId} does not found`);
+            const notFoundException = new NotFoundException(`The Coupon with ID: ${couponId} does not found`);
             const findOneSpy = jest.spyOn(couponsService, 'findOne').mockRejectedValue(notFoundException);
 
             //Act y Assert

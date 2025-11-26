@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,62 +92,62 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';</span>
-<span class="cstat-no" title="statement not covered" >import { TransactionsService } from './transactions.service';</span>
-<span class="cstat-no" title="statement not covered" >import { CreateTransactionDto } from './dto/create-transaction.dto';</span>
-<span class="cstat-no" title="statement not covered" >import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { TransactionsService } from './transactions.service';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 &nbsp;
 @Controller('transactions')
-export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >TransactionsController </span>{</span></span>
-<span class="fstat-no" title="function not covered" >  constructor(private readonly <span class="cstat-no" title="statement not covered" >t</span>ransactionsService: T</span>ransactionsService) { }
+export class TransactionsController {
+  constructor(private readonly transactionsService: TransactionsService<span class="branch-1 cbranch-no" title="branch not covered" >) { }</span>
 &nbsp;
   @Post()
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  create(</span>@Body() createTransactionDto: CreateTransactionDto) {</span>
-<span class="cstat-no" title="statement not covered" >    return this.transactionsService.create(createTransactionDto);</span>
+  create(@Body() createTransactionDto: CreateTransactionDto<span class="branch-1 cbranch-no" title="branch not covered" >) {</span>
+    return this.transactionsService.create(createTransactionDto);
   }
 &nbsp;
   @Get()
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  findAll(</span>@Query('transactionDate') transactionDate: string) {</span>
-<span class="cstat-no" title="statement not covered" >    return this.transactionsService.findAll(transactionDate);</span>
+  findAll(@Query('transactionDate') transactionDate: string) {
+    return this.transactionsService.findAll(transactionDate);
   }
 &nbsp;
   @Get(':id')
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  findOne(</span>@Param('id', IdValidationPipe) id: string) {</span>
-<span class="cstat-no" title="statement not covered" >    return this.transactionsService.findOne(+id);</span>
+  findOne(@Param('id', IdValidationPipe) id: string) {
+    return this.transactionsService.findOne(+id);
   }
 &nbsp;
   @Delete(':id')
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  remove(</span>@Param('id', IdValidationPipe) id: string) {</span>
-<span class="cstat-no" title="statement not covered" >    return this.transactionsService.remove(+id);</span>
+  remove(@Param('id', IdValidationPipe) id: string) {
+    return this.transactionsService.remove(+id);
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -157,7 +157,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-10T14:55:31.642Z
+                at 2025-11-26T03:07:38.711Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -60,12 +60,14 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
     });
 
     describe('POST /products', () => {
-        it('Should return product created successfully without image', async () => {
+        it('Should return product created successfully with image', async () => {
             //Arrage
             const createProductDto: CreateProductDto = productCreateDtos[0];
             const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            
             const productRepository = dataSource.getRepository(Product)
             const categoryRepository = dataSource.getRepository(Category)
+            
             const categorySaved: Category = await categoryRepository.save(createCategoryDto)
             createProductDto.categoryId = categorySaved.id
             createProductDto.image = 'img1.jpg'
@@ -106,14 +108,14 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             expect(response.body).toHaveProperty('statusCode')
             expect(response.body.statusCode).toBe(404)
         })
-        it('Should return 400 when createProductDto is unprocesable', async () => {
+        it('Should return 400 when createProductDto is unprocessable', async () => {
             //Arrage
-            const createProductDto = 'Unprocesable'
+            const createProductDto = 'Unprocessable'
             //Act
             const response = await request(app.getHttpServer())
                 .post('/products')
                 .send(createProductDto)
-                .expect(400); // Esperar código 201 (Created)
+                .expect(400); // Esperar código 400 (Unprocessable)
 
             expect(response.body).toHaveProperty('message');
             expect(response.body.message).toStrictEqual(['Invalid name', 'The name is required', 'Invalid price', 'The price is required', 'Invalid inventory', 'The inventory is required', 'Invalid categoryId', 'The categoryId is required']);
@@ -128,10 +130,10 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             const categoryRepository = dataSource.getRepository(Category);
             const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
             const categorySaved2: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const productsRepository = dataSource.getRepository(Product);
-            await productsRepository.save({ ...productCreateDtos[0], categoryId: categorySaved1.id });
-            await productsRepository.save({ ...productCreateDtos[1], categoryId: categorySaved1.id });
-            await productsRepository.save({ ...productCreateDtos[0], categoryId: categorySaved2.id });
+            const productRepository = dataSource.getRepository(Product);
+            await productRepository.save({ ...productCreateDtos[0], categoryId: categorySaved1.id });
+            await productRepository.save({ ...productCreateDtos[1], categoryId: categorySaved1.id });
+            await productRepository.save({ ...productCreateDtos[0], categoryId: categorySaved2.id });
 
             // Act
             const response = await request(app.getHttpServer())
@@ -155,11 +157,11 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             const categoryRepository = dataSource.getRepository(Category);
             const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
             const categorySaved2: Category = await categoryRepository.save({ name: 'Ropa' });
-            const productsRepository = dataSource.getRepository(Product);
+            const productRepository = dataSource.getRepository(Product);
             // Guardar productos con la relación de categoría completa
-            await productsRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
-            await productsRepository.save({ ...productCreateDtos[1], category: categorySaved1 });
-            await productsRepository.save({ ...productCreateDtos[0], category: categorySaved2 });
+            await productRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
+            await productRepository.save({ ...productCreateDtos[1], category: categorySaved1 });
+            await productRepository.save({ ...productCreateDtos[0], category: categorySaved2 });
 
             // Act: Enviar query param category_id
             const response = await request(app.getHttpServer())
@@ -182,11 +184,11 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             // Arrange: Crear múltiples productos
             const categoryRepository = dataSource.getRepository(Category);
             const categorySaved: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const productsRepository = dataSource.getRepository(Product);
+            const productRepository = dataSource.getRepository(Product);
             
             // Crear 5 productos con la relación de categoría completa
             for (let i = 0; i < 5; i++) {
-                await productsRepository.save({ ...productCreateDtos[0], category: categorySaved });
+                await productRepository.save({ ...productCreateDtos[0], category: categorySaved });
             }
 
             // Act: Paginación - tomar 2 productos, saltar 1
@@ -210,15 +212,15 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             const categoryRepository = dataSource.getRepository(Category);
             const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
             const categorySaved2: Category = await categoryRepository.save({ name: 'Ropa' });
-            const productsRepository = dataSource.getRepository(Product);
+            const productRepository = dataSource.getRepository(Product);
             
             // 3 productos en categorySaved1
-            await productsRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
-            await productsRepository.save({ ...productCreateDtos[1], category: categorySaved1 });
-            await productsRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
+            await productRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
+            await productRepository.save({ ...productCreateDtos[1], category: categorySaved1 });
+            await productRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
             // 2 productos en categorySaved2
-            await productsRepository.save({ ...productCreateDtos[0], category: categorySaved2 });
-            await productsRepository.save({ ...productCreateDtos[1], category: categorySaved2 });
+            await productRepository.save({ ...productCreateDtos[0], category: categorySaved2 });
+            await productRepository.save({ ...productCreateDtos[1], category: categorySaved2 });
 
             // Act: Filtrar por categoría y paginar
             const response = await request(app.getHttpServer())
@@ -279,8 +281,8 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
             // Arrange: Crear categorías directamente en la BD
             const categoryRepository = dataSource.getRepository(Category);
             const categorySaved: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const productsRepository = dataSource.getRepository(Product);
-            const productSaved: Product = await productsRepository.save({ ...productCreateDtos[0], categoryId: categorySaved.id });
+            const productRepository = dataSource.getRepository(Product);
+            const productSaved: Product = await productRepository.save({ ...productCreateDtos[0], categoryId: categorySaved.id });
 
             // Act
             const response = await request(app.getHttpServer())
@@ -406,7 +408,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
         })
         it('Should return 400 when invalid updateProductDto', async () => {
             //Arrange 
-            const updateProductDto = 'Unprocesable'
+            const updateProductDto = 'Unprocessable'
             //Act
             const response = await request(app.getHttpServer())
                 .post('/products')

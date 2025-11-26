@@ -24,7 +24,7 @@ export class CouponsService {
   async findOne(id: number) {
     const coupon = await this.couponRepository.findOneBy({ id })
     if (!coupon) {
-      throw new NotFoundException(`The coupon with ID: ${id} does not found`)
+      throw new NotFoundException(`The Coupon with ID: ${id} does not found`)
     }
     return coupon;
   }
@@ -44,7 +44,7 @@ export class CouponsService {
   async applyCoupon(name: string) {
     const coupon = await this.couponRepository.findOneBy({ name })
     if (!coupon) {
-      throw new NotFoundException(`The coupon with name: ${name} does not found`)
+      throw new NotFoundException(`The Coupon with name: ${name} does not found`)
     }
     const currrentDate = new Date()
     const expirationDate = endOfDay(coupon.expirationDate)

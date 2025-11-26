@@ -8,8 +8,8 @@ import { getRepositoryToken } from "@nestjs/typeorm"
 import { CouponsService } from "../coupons/coupons.service"
 import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { CreateTransactionDto } from "./dto/create-transaction.dto"
-import { 
-    getProductById, 
+import {
+    getProductById,
     getCouponByName,
     TRANSACTION_TEST_IDS,
     getTransactionContent,
@@ -725,8 +725,6 @@ describe('TransactionsService', () => {
                 transactionContentId2,
                 productId1,
                 productId2,
-                transactionContent1,
-                transactionContent2,
                 expectedMessage,
                 existTransaction
             } = getTransactionTestData()

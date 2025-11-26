@@ -11,7 +11,7 @@ export class Coupon {
     @Column({type: 'int'})
     percentage:number
 
-    @Column({type: 'date'})
+    @Column()
     expirationDate: Date
 
 

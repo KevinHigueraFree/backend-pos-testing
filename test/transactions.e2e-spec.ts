@@ -1,322 +1,680 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { INestApplication, ValidationPipe } from "@nestjs/common"
+import { Test, TestingModule } from "@nestjs/testing"
+import { TypeOrmModule } from "@nestjs/typeorm"
+import { CategoriesModule } from "../src/categories/categories.module"
+import { CreateCategoryDto } from "../src/categories/dto/create-category.dto"
+import { Category } from "../src/categories/entities/category.entity"
+import { categoryCreateDtos, couponCreateDtos, productCreateDtos, productUpdateDtos } from "../src/common/test-data"
+import { CouponsModule } from "../src/coupons/coupons.module"
+import { Coupon } from "../src/coupons/entities/coupon.entity"
+import { CreateProductDto } from "../src/products/dto/create-product.dto"
+import { Product } from "../src/products/entities/product.entity"
+import { ProductsModule } from "../src/products/products.module"
+import { CreateTransactionDto } from "../src/transactions/dto/create-transaction.dto"
+import { Transaction, TransactionContents } from "../src/transactions/entities/transaction.entity"
+import { TransactionsModule } from "../src/transactions/transactions.module"
+import { App } from "supertest/types"
+import { DataSource } from "typeorm"
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { DataSource, In } from 'typeorm';
+import { CreateCouponDto } from "src/coupons/dto/create-coupon.dto"
+import { addDays, subDays, format } from "date-fns"
+import { testInvalidIdE2E } from "./helpers/e2e-test.helper"
 
-// Importar todos los módulos necesarios para el flujo completo
-import { CategoriesModule } from '../src/categories/categories.module';
-import { ProductsModule } from '../src/products/products.module';
-import { CouponsModule } from '../src/coupons/coupons.module';
-import { TransactionsModule } from '../src/transactions/transactions.module';
 
-// Importar entidades
-import { Category } from '../src/categories/entities/category.entity';
-import { Product } from '../src/products/entities/product.entity';
-import { Coupon } from '../src/coupons/entities/coupon.entity';
-import { Transaction, TransactionContents } from '../src/transactions/entities/transaction.entity';
+describe('TransactionsController (e2e) - Integrations tests', () => {
+    let app: INestApplication<App>
+    let dataSource: DataSource
 
-/**
- * TEST END-TO-END (E2E)
- * 
- * Este test prueba un flujo completo del sistema POS:
- * 1. Crear una categoría
- * 2. Crear productos en esa categoría
- * 3. Crear un cupón de descuento
- * 4. Crear una transacción con productos y cupón
- * 5. Verificar que todo el flujo funciona correctamente
- * 
- * Diferencia con test de integración:
- * - E2E: Prueba múltiples módulos trabajando juntos (flujo completo)
- * - Integración: Prueba un solo módulo con sus dependencias
- */
-describe('Flujo Completo POS (E2E)', () => {
-  let app: INestApplication<App>;
-  let dataSource: DataSource;
+    beforeAll(async () => {
+        const moduleFixture: TestingModule = await Test.createTestingModule({
+            imports: [
+                ProductsModule,
+                CategoriesModule,
+                CouponsModule,
+                TransactionsModule,
+                TypeOrmModule.forRoot({
+                    type: 'sqlite',
+                    database: ':memory:',
+                    entities: [Category, Product, Coupon, Transaction, TransactionContents],
+                    synchronize: true,
+                    dropSchema: true,
+                    retryAttempts: 0,
+                    retryDelay: 0
+                })
+            ],
+        }).compile();
 
-  // Datos que se usarán en el flujo completo
-  let createdCategory: Category;
-  let createdProducts: Product[] = [];
-  let createdCoupon: Coupon;
-  let createdTransaction: Transaction;
+        app = moduleFixture.createNestApplication()
 
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        // Importar TODOS los módulos necesarios para el flujo completo
-        CategoriesModule,
-        ProductsModule,
-        CouponsModule,
-        TransactionsModule,
-        // Configurar TypeORM para tests (SQLite en memoria)
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          entities: [Category, Product, Coupon, Transaction, TransactionContents],
-          synchronize: true,
-          dropSchema: true,
-        }),
-      ],
-    }).compile();
+        app.useGlobalPipes(new ValidationPipe({
+            whitelist: true,
+            transform: true
+        }))
+        await app.init()
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
-
-    dataSource = moduleFixture.get<DataSource>(DataSource);
-  });
-
-  afterEach(async () => {
-    // Limpiar todas las tablas después de cada test
-    await dataSource.getRepository(TransactionContents).clear();
-    await dataSource.getRepository(Transaction).clear();
-    await dataSource.getRepository(Product).clear();
-    await dataSource.getRepository(Category).clear();
-    await dataSource.getRepository(Coupon).clear();
-    
-    // Resetear variables
-    createdCategory = null as any;
-    createdProducts = [];
-    createdCoupon = null as any;
-    createdTransaction = null as any;
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  describe('Flujo completo: Crear venta con productos y cupón', () => {
-    it('debería completar todo el flujo: categoría → productos → cupón → transacción', async () => {
-      // ============================================
-      // PASO 1: Crear una categoría
-      // ============================================
-      const categoryResponse = await request(app.getHttpServer())
-        .post('/categories')
-        .send({ name: 'Electrónica' })
-        .expect(201);
-
-      createdCategory = categoryResponse.body;
-      expect(createdCategory).toHaveProperty('id');
-      expect(createdCategory.name).toBe('Electrónica');
-
-      // Verificar que se guardó en la BD
-      const categoryInDb = await dataSource
-        .getRepository(Category)
-        .findOne({ where: { id: createdCategory.id } });
-      expect(categoryInDb).toBeDefined();
-
-      // ============================================
-      // PASO 2: Crear productos en esa categoría
-      // ============================================
-      const productsData = [
-        { name: 'Laptop', price: 999.99, inventory: 10, categoryId: createdCategory.id },
-        { name: 'Mouse', price: 29.99, inventory: 50, categoryId: createdCategory.id },
-        { name: 'Teclado', price: 79.99, inventory: 30, categoryId: createdCategory.id },
-      ];
-
-      for (const productData of productsData) {
-        const productResponse = await request(app.getHttpServer())
-          .post('/products')
-          .send(productData)
-          .expect(201);
-
-        createdProducts.push(productResponse.body);
-        expect(productResponse.body).toHaveProperty('id');
-        expect(productResponse.body.name).toBe(productData.name);
-      }
-
-      // Verificar que los productos se guardaron con la categoría correcta
-      const productsInDb = await dataSource
-        .getRepository(Product)
-        .find({ where: { id: In(createdProducts.map(p => p.id)) } });
-      expect(productsInDb).toHaveLength(3);
-
-      // ============================================
-      // PASO 3: Crear un cupón de descuento
-      // ============================================
-      const futureDate = new Date();
-      futureDate.setMonth(futureDate.getMonth() + 1); // 1 mes en el futuro
-      // El DTO espera un número (timestamp), pero TypeORM lo convierte a Date
-      const expirationTimestamp = futureDate.getTime(); // Timestamp en milisegundos
-
-      const couponResponse = await request(app.getHttpServer())
-        .post('/coupons')
-        .send({
-          name: 'DESCUENTO10',
-          percentage: 10,
-          expirationDate: expirationTimestamp,
-        })
-        .expect(201);
-
-      createdCoupon = couponResponse.body;
-      expect(createdCoupon).toHaveProperty('id');
-      expect(createdCoupon.name).toBe('DESCUENTO10');
-      expect(createdCoupon.percentage).toBe(10);
-
-      // ============================================
-      // PASO 4: Crear una transacción con productos y cupón
-      // ============================================
-      // Calcular total: (999.99 * 1) + (29.99 * 2) + (79.99 * 1) = 1139.96
-      // Con descuento del 10%: 1139.96 * 0.9 = 1025.964
-      const totalBeforeDiscount = 999.99 + (29.99 * 2) + 79.99;
-      const expectedDiscount = totalBeforeDiscount * 0.1;
-      const expectedTotal = totalBeforeDiscount - expectedDiscount;
-
-      const transactionData = {
-        total: expectedTotal,
-        coupon: createdCoupon.name,
-        contents: [
-          { productId: createdProducts[0].id, quantity: 1, price: 999.99 },
-          { productId: createdProducts[1].id, quantity: 2, price: 29.99 },
-          { productId: createdProducts[2].id, quantity: 1, price: 79.99 },
-        ],
-      };
-
-      const transactionResponse = await request(app.getHttpServer())
-        .post('/transactions')
-        .send(transactionData)
-        .expect(201);
-
-      // El servicio retorna un string, pero la transacción se guardó en la BD
-      expect(transactionResponse.body).toBe('Sale storaged correctly');
-
-      // Obtener la transacción de la BD para verificar
-      const transactions = await dataSource
-        .getRepository(Transaction)
-        .find({
-          relations: ['contents', 'contents.product'],
-          order: { id: 'DESC' },
-          take: 1,
-        });
-      
-      createdTransaction = transactions[0];
-      expect(createdTransaction).toBeDefined();
-      expect(createdTransaction.total).toBeCloseTo(expectedTotal, 2);
-      expect(createdTransaction.coupon).toBe(createdCoupon.name);
-      expect(createdTransaction.discount).toBeCloseTo(expectedDiscount, 2);
-      expect(createdTransaction.contents).toHaveLength(3);
-
-      // ============================================
-      // PASO 5: Verificar que el inventario se actualizó
-      // ============================================
-      const updatedProducts = await dataSource
-        .getRepository(Product)
-        .find({ where: { id: In(createdProducts.map(p => p.id)) } });
-
-      // Laptop: 10 - 1 = 9
-      const laptop = updatedProducts.find(p => p.id === createdProducts[0].id);
-      expect(laptop?.inventory).toBe(9);
-
-      // Mouse: 50 - 2 = 48
-      const mouse = updatedProducts.find(p => p.id === createdProducts[1].id);
-      expect(mouse?.inventory).toBe(48);
-
-      // Teclado: 30 - 1 = 29
-      const keyboard = updatedProducts.find(p => p.id === createdProducts[2].id);
-      expect(keyboard?.inventory).toBe(29);
-
-      // ============================================
-      // PASO 6: Verificar que la transacción se puede recuperar
-      // ============================================
-      const getTransactionResponse = await request(app.getHttpServer())
-        .get(`/transactions/${createdTransaction.id}`)
-        .expect(200);
-
-      expect(getTransactionResponse.body.id).toBe(createdTransaction.id);
-      expect(getTransactionResponse.body.contents).toHaveLength(3);
-      expect(getTransactionResponse.body.contents[0].product).toBeDefined();
-      expect(getTransactionResponse.body.contents[0].product.name).toBe('Laptop');
+        dataSource = moduleFixture.get<DataSource>(DataSource)
     });
 
-    it('debería crear una transacción sin cupón', async () => {
-      // Crear categoría
-      const categoryResponse = await request(app.getHttpServer())
-        .post('/categories')
-        .send({ name: 'Ropa' })
-        .expect(201);
+    afterEach(async () => {
+        // Limpiar en orden respetando foreign keys
+        if (dataSource && dataSource.isInitialized) {
+            await dataSource.getRepository(TransactionContents).clear()
+            await dataSource.getRepository(Transaction).clear()
+            await dataSource.getRepository(Product).clear()
+            await dataSource.getRepository(Category).clear()
+            await dataSource.getRepository(Coupon).clear()
+        }
+    })
 
-      // Crear producto
-      const productResponse = await request(app.getHttpServer())
-        .post('/products')
-        .send({
-          name: 'Camiseta',
-          price: 19.99,
-          inventory: 100,
-          categoryId: categoryResponse.body.id,
-        })
-        .expect(201);
-
-      // Crear transacción sin cupón
-      const transactionResponse = await request(app.getHttpServer())
-        .post('/transactions')
-        .send({
-          total: 19.99,
-          contents: [
-            { productId: productResponse.body.id, quantity: 1, price: 19.99 },
-          ],
-        })
-        .expect(201);
-
-      expect(transactionResponse.body).toBe('Sale storaged correctly');
-
-      // Verificar en la BD
-      const transactions = await dataSource
-        .getRepository(Transaction)
-        .find({
-          relations: ['contents'],
-          order: { id: 'DESC' },
-          take: 1,
-        });
-      
-      const transaction = transactions[0];
-      expect(transaction.coupon).toBeNull();
-      expect(transaction.discount).toBe(0);
-      expect(transaction.total).toBe(19.99);
+    // DESPUÉS DE TODOS LOS TESTS: Cerrar la aplicación y la conexión a la base de datos
+    afterAll(async () => {
+        // Cerrar la conexión de TypeORM primero
+        if (dataSource && dataSource.isInitialized) {
+            try {
+                await dataSource.destroy();
+            } catch (error) {
+                // Ignorar errores al cerrar la conexión
+            }
+        }
+        // Luego cerrar la aplicación NestJS
+        if (app) {
+            try {
+                await app.close();
+            } catch (error) {
+                // Ignorar errores al cerrar la app
+            }
+        }
     });
 
-    it('debería fallar si intenta crear transacción con producto inexistente', async () => {
-      await request(app.getHttpServer())
-        .post('/transactions')
-        .send({
-          total: 100,
-          contents: [
-            { productId: 99999, quantity: 1, price: 100 },
-          ],
+    describe('POST /transactions', () => {
+        it('Should return transaction created successfully (sin cupón)', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const transactionRepository = dataSource.getRepository(Transaction)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+
+            const initialInventory1 = productSaved1.inventory
+            const initialInventory2 = productSaved2.inventory
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(201)
+
+            //Assert
+            expect(response.text || response.body).toBe("Sale storaged correctly")
+
+            // Verificar que la transacción se guardó en la base de datos
+            const allTransactions = await transactionRepository.find({
+                relations: { contents: { product: true } },
+                order: { id: 'ASC' }
+            })
+            const savedTransaction = allTransactions[0]
+
+            expect(savedTransaction).toBeDefined()
+            expect(Number(savedTransaction.total)).toBe(2300)
+            expect(savedTransaction.coupon).toBeNull()
+            expect(Number(savedTransaction.discount)).toBe(0)
+            expect(savedTransaction.contents).toHaveLength(2)
+
+            // Verificar que los productos tienen el inventario actualizado
+            const product1Updated = await productRepository.findOne({ where: { id: productSaved1.id } })
+            const product2Updated = await productRepository.findOne({ where: { id: productSaved2.id } })
+
+            expect(product1Updated?.inventory).toBe(initialInventory1 - 1)
+            expect(product2Updated?.inventory).toBe(initialInventory2 - 1)
+
+            // Ordenar los contenidos por ID del producto para tener un orden consistente
+            const sortedContents = savedTransaction.contents.sort((a, b) => a.product.id - b.product.id)
+
+            // Verificar los contenidos de la transacción
+            const content1 = sortedContents.find(c => c.product.id === productSaved1.id)
+            const content2 = sortedContents.find(c => c.product.id === productSaved2.id)
+
+            expect(content1).toBeDefined()
+            expect(content1?.quantity).toBe(1)
+            expect(Number(content1?.price)).toBe(1500)
+
+            expect(content2).toBeDefined()
+            expect(content2?.quantity).toBe(1)
+            expect(Number(content2?.price)).toBe(800)
         })
-        .expect(400); // O el código de error que tu API retorne
-    });
+        it('Should return transaction created successfully (con cupón válido)', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const couponRepository = dataSource.getRepository(Coupon)
+            const transactionRepository = dataSource.getRepository(Transaction)
 
-    it('debería fallar si intenta crear transacción con inventario insuficiente', async () => {
-      // Crear categoría
-      const categoryResponse = await request(app.getHttpServer())
-        .post('/categories')
-        .send({ name: 'Test' })
-        .expect(201);
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
 
-      // Crear producto con inventario limitado
-      const productResponse = await request(app.getHttpServer())
-        .post('/products')
-        .send({
-          name: 'Producto Limitado',
-          price: 10,
-          inventory: 5, // Solo 5 disponibles
-          categoryId: categoryResponse.body.id,
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+
+            const initialInventory1 = productSaved1.inventory
+            const initialInventory2 = productSaved2.inventory
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(201)
+
+            //Assert
+            expect(response.text || response.body).toBe("Sale storaged correctly")
+
+            // Verificar que la transacción se guardó en la base de datos
+            const allTransactions = await transactionRepository.find({
+                relations: { contents: { product: true } },
+                order: { id: 'ASC' }
+            })
+            const savedTransaction = allTransactions[0]
+            const discount = (couponSaved.percentage * createTransactionDto.total) / 100
+            const totalWithDiscount = createTransactionDto.total - discount
+
+            expect(savedTransaction).toBeDefined()
+            expect(Number(savedTransaction.total)).toBe(totalWithDiscount)
+            expect(savedTransaction.coupon).toBe(createCouponDto.name)
+            expect(Number(savedTransaction.discount)).toBe(discount)
+            expect(savedTransaction.contents).toHaveLength(2)
+
+            // Verificar que los productos tienen el inventario actualizado
+            const product1Updated = await productRepository.findOne({ where: { id: productSaved1.id } })
+            const product2Updated = await productRepository.findOne({ where: { id: productSaved2.id } })
+
+            expect(product1Updated?.inventory).toBe(initialInventory1 - 1)
+            expect(product2Updated?.inventory).toBe(initialInventory2 - 1)
+
+            // Ordenar los contenidos por ID del producto para tener un orden consistente
+            const sortedContents = savedTransaction.contents.sort((a, b) => a.product.id - b.product.id)
+
+            // Verificar los contenidos de la transacción
+            const content1 = sortedContents.find(c => c.product.id === productSaved1.id)
+            const content2 = sortedContents.find(c => c.product.id === productSaved2.id)
+
+            expect(content1).toBeDefined()
+            expect(content1?.quantity).toBe(1)
+            expect(Number(content1?.price)).toBe(1500)
+
+            expect(content2).toBeDefined()
+            expect(content2?.quantity).toBe(1)
+            expect(Number(content2?.price)).toBe(800)
         })
-        .expect(201);
 
-      // Intentar comprar más de lo disponible
-      const errorResponse = await request(app.getHttpServer())
-        .post('/transactions')
-        .send({
-          total: 100,
-          contents: [
-            { productId: productResponse.body.id, quantity: 10, price: 10 }, // Intentar comprar 10
-          ],
+        it('Should return 400 when createTransactionDto is unprocessable', async () => {
+            //Arrange
+            const createTransactionDto = 'unprocesable'
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(400)
+
+            //Assert
+            expect(response.body.message).toStrictEqual([
+                "Invalid total",
+                "The total cant'b be empty",
+                "The contents cant'b be empty",
+                "contents must be an array"
+            ])
+            expect(response.body.error).toBe("Bad Request")
+            expect(response.body.statusCode).toBe(400)
         })
-        .expect(400); // BadRequestException por inventario insuficiente
-      
-      expect(errorResponse.body.message).toContain('exced the enable quantity');
-    });
-  });
-});
 
+        it('Should return 404 when product does not exist', async () => {
+            //Arrange
+            const couponRepository = dataSource.getRepository(Coupon)
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+            const productId = 999
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: productId,
+                        quantity: 1,
+                        price: 1500
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(404)
+
+            //Assert
+            expect(response.body.message).toStrictEqual([`The Product with ID ${productId} does not found`])
+            expect(response.body.error).toBe("Not Found")
+            expect(response.body.statusCode).toBe(404)
+        })
+        it('Should return 400 when product inventory is insufficient', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const couponRepository = dataSource.getRepository(Coupon)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto: CreateProductDto = productCreateDtos[0]
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved = await productRepository.save({ ...createProductDto, category: categorySaved, inventory: 0 })
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 1500,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: productSaved.id,
+                        quantity: 10,
+                        price: 1500
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(400)
+
+            //Assert
+            expect(response.body.message).toStrictEqual([`The product ${productSaved.name} exced the enable quantity`])
+            expect(response.body.error).toBe("Bad Request")
+            expect(response.body.statusCode).toBe(400)
+        })
+        it('Should return 422 when coupon is expired', async () => {
+            //Arrange
+            const couponRepository = dataSource.getRepository(Coupon)
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: subDays(new Date(), 1) as any })
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: 1,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: 2,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(422)
+
+            //Assert
+            expect(response.body.message).toStrictEqual('Expired coupon')
+            expect(response.body.error).toBe("Unprocessable Entity")
+            expect(response.body.statusCode).toBe(422)
+        })
+        it('Should return 404 when coupon does not exist', async () => {
+            //Arrange
+            const couponName = 'non-exist'
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponName,
+                contents: [
+                    {
+                        productId: 1,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: 2,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .post('/transactions')
+                .send(createTransactionDto)
+                .expect(404)
+
+            expect(response.body.message).toStrictEqual(`The Coupon with name: ${couponName} does not found`)
+            expect(response.body.error).toBe("Not Found")
+            expect(response.body.statusCode).toBe(404)
+        })
+    })
+
+    describe('GET /transactions', () => {
+        it('Should return 200 when found transactions', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const transactionRepository = dataSource.getRepository(Transaction)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+
+            const createTransactionDto1: CreateTransactionDto = {
+                total: 2300,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            const createTransactionDto2: CreateTransactionDto = {
+                total: 2300,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 10,
+                        price: 1500
+                    },
+                ]
+            } as CreateTransactionDto
+
+            await transactionRepository.save({ ...createTransactionDto1 })
+            await transactionRepository.save({ ...createTransactionDto2 })
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions`)
+                .expect(200)
+
+            //Assert
+            expect(response.body).toBeDefined()
+            expect(response.body).toHaveLength(2)
+        })
+
+        it('Should return 200 and empty array when no transactions found', async () => {
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions`)
+                .expect(200)
+
+            //Assert
+            expect(response.body).toBeDefined()
+            expect(response.body).toStrictEqual([])
+        })
+
+        it('Should return 200 when filtering by transactionDate', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const transactionRepository = dataSource.getRepository(Transaction)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+
+            const createTransactionDto1: CreateTransactionDto = {
+                total: 2300,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            const createTransactionDto2: CreateTransactionDto = {
+                total: 2300,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 10,
+                        price: 1500
+                    },
+                ]
+            } as CreateTransactionDto
+
+            await transactionRepository.save({ ...createTransactionDto1 })
+            await transactionRepository.save({ ...createTransactionDto2 })
+            const transactionDate = format(new Date(), 'yyyy-MM-dd')
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions?transactionDate=${transactionDate}`)
+                .expect(200)
+
+            //Assert
+
+            expect(response.body).toBeDefined()
+            expect(response.body).toHaveLength(2)
+        })
+
+        it('Should return 400 when transactionDate is invalid', async () => {
+            //Arrange
+            const transactionDate = 'invalid-date'
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions?transactionDate=${transactionDate}`)
+                .expect(400)
+
+            //Assert
+            expect(response.body.message).toStrictEqual("Invalid Date")
+            expect(response.body.error).toBe("Bad Request")
+            expect(response.body.statusCode).toBe(400)
+        })
+    })
+
+    describe('GET /transactions:id', () => {
+        it('Should return 200 when found transaction', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const transactionRepository = dataSource.getRepository(Transaction)
+            const couponRepository = dataSource.getRepository(Coupon)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            const transactionSaved = await transactionRepository.save(createTransactionDto)
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions/${transactionSaved.id}`)
+                .expect(200)
+
+            //Assert
+            expect(response.body).toHaveProperty('id')
+            expect(response.body).toHaveProperty('total')
+            expect(response.body).toHaveProperty('coupon')
+            expect(response.body).toHaveProperty('discount')
+            expect(response.body).toHaveProperty('transactionDate')
+            expect(response.body).toHaveProperty('contents')
+        })
+
+        it('Should return 404 when transaction does not found', async () => {
+            //Arrange
+            const transactionId = 999
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .get(`/transactions/${transactionId}`)
+                .expect(404)
+            //Assert
+            expect(response.body.message).toStrictEqual(`The Transaction with ID ${transactionId} does not found`)
+            expect(response.body.error).toBe("Not Found")
+            expect(response.body.statusCode).toBe(404)
+        })
+
+        it('Should return 400 when invalid id', async () => {
+            // Act & Assert
+            await testInvalidIdE2E(app, 'get', '/transactions');
+        })
+    })
+
+    describe('DELETE /transactions:id', () => {
+        it('Should return 200 when transaction was removed successfully', async () => {
+            //Arrange
+            const categoryRepository = dataSource.getRepository(Category)
+            const productRepository = dataSource.getRepository(Product)
+            const transactionRepository = dataSource.getRepository(Transaction)
+            const couponRepository = dataSource.getRepository(Coupon)
+
+            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
+            const createProductDto1: CreateProductDto = productCreateDtos[0]
+            const createProductDto2: CreateProductDto = productCreateDtos[1]
+            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+
+            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
+            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
+            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
+            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+
+            const createTransactionDto: CreateTransactionDto = {
+                total: 2300,
+                coupon: couponSaved.name,
+                contents: [
+                    {
+                        productId: productSaved1.id,
+                        quantity: 1,
+                        price: 1500
+                    },
+                    {
+                        productId: productSaved2.id,
+                        quantity: 1,
+                        price: 800
+                    }
+                ]
+            } as CreateTransactionDto
+
+            const transactionSaved = await transactionRepository.save(createTransactionDto)
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .delete(`/transactions/${transactionSaved.id}`)
+                .expect(200)
+
+            //Assert
+            expect(response.body.message).toBe(`The Transaction with ID ${transactionSaved.id} was removed`)
+        })
+        it('Should return 404 when transaction does not found', async () => {
+            //Arrange
+            const transactionId = 999
+
+            //Act
+            const response = await request(app.getHttpServer())
+                .delete(`/transactions/${transactionId}`)
+                .expect(404)
+
+            //Assert
+            expect(response.body.message).toStrictEqual(`The Transaction with ID ${transactionId} does not found`)
+            expect(response.body.error).toBe("Not Found")
+            expect(response.body.statusCode).toBe(404)
+
+        })
+        it('Should return 400 when invalid id', async () => {
+            // Act & Assert
+            await testInvalidIdE2E(app, 'get', '/transactions');
+        })
+    })
+
+})

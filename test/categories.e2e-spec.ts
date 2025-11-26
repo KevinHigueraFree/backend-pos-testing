@@ -54,7 +54,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   });
 
   describe('POST /categories', () => {
-    it('debería crear una nueva categoría en la base de datos', async () => {
+    it('Should return 201, when create a category', async () => {
       // Arrange: Preparar los datos
       const createCategoryDto = {
         name: 'Electrónica',
@@ -121,7 +121,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   });
 
   describe('GET /categories', () => {
-    it('debería retornar un array vacío cuando no hay categorías', async () => {
+    it('Shoudl return empty array, when there are not categories', async () => {
       // Act
       const response = await request(app.getHttpServer())
         .get('/categories')
@@ -132,7 +132,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
       expect(Array.isArray(response.body)).toBe(true);
     });
 
-    it('debería retornar todas las categorías creadas', async () => {
+    it('Should return 200, when find all categories', async () => {
       // Arrange: Crear categorías directamente en la BD
       const categoryRepository = dataSource.getRepository(Category);
       await categoryRepository.save({ name: 'Electrónica' });
@@ -153,7 +153,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   });
 
   describe('GET /categories/:id', () => {
-    it('debería retornar una categoría por su ID', async () => {
+    it('Should return 200, when category was found', async () => {
       // Arrange: Crear una categoría en la BD
       const categoryRepository = dataSource.getRepository(Category);
       const savedCategory = await categoryRepository.save({ name: 'Electrónica' });
@@ -168,7 +168,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
       expect(response.body.name).toBe('Electrónica');
     });
 
-    it('debería retornar 404 cuando la categoría no existe', async () => {
+    it('Shoudl return 404, when categorie was not found', async () => {
       const categoryId = 999
       // Act & Assert
       const response = await request(app.getHttpServer())

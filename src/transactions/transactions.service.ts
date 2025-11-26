@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, Options } from '@nestjs/common';
+                                                                                                                      import { BadRequestException, Injectable, NotFoundException, Options } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,7 +19,6 @@ export class TransactionsService {
   async create(createTransactionDto: CreateTransactionDto) {
 
     return await this.productRepository.manager.transaction(async (transactionEntityManager) => {
-
 
       const transaction = new Transaction()
       const total = createTransactionDto.contents.reduce((total, item) => total + (item.quantity * item.price), 0)
@@ -85,7 +84,7 @@ export class TransactionsService {
       const start = startOfDay(date)
       const end = endOfDay(date)
 
-      //nos taremos las ventas desde el inicio hasta el final
+      // nos taremos las ventas desde el inicio hasta el final
       options.where = {
         transactionDate: Between(start, end)
       }

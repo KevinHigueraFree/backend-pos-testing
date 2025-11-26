@@ -161,7 +161,7 @@ describe('CouponsController', () => {
         it('Should return exception because does not found the coupon', async () => {
             const couponName = 'nonexistent'
             const applyCouponDto = { name: couponName }
-            const error = new NotFoundException(`The coupon with name: ${couponName} does not found`)
+            const error = new NotFoundException(`The Coupon with name: ${couponName} does not found`)
             mockCouponsService.applyCoupon.mockRejectedValue(error)
 
             //Act y Assert
