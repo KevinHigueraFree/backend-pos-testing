@@ -14,10 +14,13 @@ import { UpdateCategoryDto } from "src/categories/dto/update-category.dto"
 import { UpdateCouponDto } from "src/coupons/dto/update-coupon.dto"
 import { addDays, subDays } from "date-fns"
 import { ApplyCouponDto } from "src/coupons/dto/apply-coupon"
+import { CouponTestHelper } from "./helpers/coupon-test.helper"
+import { ResponseTestHelper } from "./helpers/response-test.helper"
 
 describe('CouponsController (e2e) - Tests de Integración', () => {
     let app: INestApplication<App>
     let dataSource: DataSource
+    let testHelper: CouponTestHelper
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,6 +44,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
         await app.init()
 
         dataSource = moduleFixture.get<DataSource>(DataSource)
+        testHelper = new CouponTestHelper(dataSource)
     })
     afterEach(async () => {
         // Limpiar todas las categorías después de cada test
@@ -83,8 +87,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
                 .expect(400)
 
             //Assert
-            expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toStrictEqual([
+            ResponseTestHelper.expectBadRequest(response, [
                 'Invalid name',
                 'The name is required',
                 'The min percentage is 1',
@@ -94,18 +97,12 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
                 'Invalid date',
                 'The date is required'
             ]);
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Bad Request');
-            expect(Array.isArray(response.body.message)).toBe(true);
         })
     })
     describe('GET /coupons', () => {
         it('Should return 200 when found coupons', async () => {
             //Arrage
-            const couponRepository = dataSource.getRepository(Coupon)
-            await couponRepository.save({ ...couponCreateDtos[0] })
-            await couponRepository.save({ ...couponCreateDtos[1] })
-            await couponRepository.save({ ...couponCreateDtos[2] })
+            await testHelper.createCoupons(3)
 
             //Act
             const response = await request(app.getHttpServer())
@@ -133,8 +130,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
     describe('GET/coupons:id', () => {
         it('Should return 200, when found coupon', async () => {
             //Arrage
-            const couponRepository = dataSource.getRepository(Coupon)
-            const couponSaved = await couponRepository.save({ ...couponCreateDtos[0] })
+            const couponSaved = await testHelper.createCoupon()
 
             //Act
             const response = await request(app.getHttpServer())
@@ -156,12 +152,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
                 .get(`/coupons/${couponId}`)
                 .expect(404)
 
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual(expectedErrorMessage)
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, expectedErrorMessage)
         })
         it('Should return 400 when invalid id', async () => {
             // Act & Assert
@@ -171,11 +162,9 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
     describe('PATCH /coupons:id', () => {
         it('Should return 200, when coupon is updated', async () => {
             //Arrage
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0];
             const updateCouponDto: UpdateCouponDto = couponUpdateDtos[0];
             const couponRepository = dataSource.getRepository(Coupon)
-
-            const couponSaved = await couponRepository.save(createCouponDto)
+            const couponSaved = await testHelper.createCoupon()
 
             //Act
             const response = await request(app.getHttpServer())
@@ -209,12 +198,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
 
             //Expect
             expect(couponInDB).not.toBeDefined
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual(expectedErrorMessage)
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, expectedErrorMessage)
         })
         it('Should return 400 when invalid id', async () => {
             // Act & Assert
@@ -225,7 +209,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
         it('Should return 200, when coupon was removed successfully', async () => {
             //Arrange
             const couponRepository = dataSource.getRepository(Coupon)
-            const couponSaved = await couponRepository.save({ ...couponCreateDtos[0] })
+            const couponSaved = await testHelper.createCoupon()
             const expectedMessage = { message: "Removed coupon" }
 
             //Act
@@ -256,12 +240,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
 
             //Expect
             expect(couponInDB).not.toBeDefined
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual(expectedErrorMessage)
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, expectedErrorMessage)
         })
         it('Should return 400 when invalid id', async () => {
             // Act & Assert
@@ -273,9 +252,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
         it('Should return 200, when coupon is valid', async () => {
             //Arrage
             const couponRepository = dataSource.getRepository(Coupon)
-            const couponCreateDto: CreateCouponDto = couponCreateDtos[0]
-            couponCreateDto.expirationDate = addDays(new Date(), 1) as any
-            const couponSaved: Coupon = await couponRepository.save(couponCreateDto)
+            const couponSaved = await testHelper.createCoupon(undefined, 1)
             const couponFound = await couponRepository.findOne({ where: { name: couponSaved.name } })
 
             const applyCouponDto: ApplyCouponDto = { name: couponSaved.name }
@@ -308,12 +285,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
                 .send(applyCouponDto)
                 .expect(404)
 
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual(expectedErrorMessage)
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, expectedErrorMessage)
         })
 
         it('Should return 422, when coupon is unprocessable', async () => {
@@ -332,12 +304,7 @@ describe('CouponsController (e2e) - Tests de Integración', () => {
                 .expect(422)
 
             // Assert 
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Unprocessable Entity')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual(expectedErrorMessage)
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(422)
+            ResponseTestHelper.expectUnprocessableEntity(response, expectedErrorMessage)
         })
     })
 })

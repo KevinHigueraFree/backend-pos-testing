@@ -9,10 +9,13 @@ import { Product } from '../src/products/entities/product.entity';
 import { DataSource } from 'typeorm';
 import { UpdateCategoryDto } from 'src/categories/dto/update-category.dto';
 import { testInvalidIdE2E } from './helpers/e2e-test.helper';
+import { CategoryTestHelper } from './helpers/category-test.helper';
+import { ResponseTestHelper } from './helpers/response-test.helper';
 
 describe('CategoriesController (e2e) - Tests de Integración', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
+  let testHelper: CategoryTestHelper;
 
   // ANTES DE TODOS LOS TESTS: Configurar la base de datos de prueba
   beforeAll(async () => {
@@ -40,6 +43,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
 
     // Obtener la conexión a la base de datos para limpiar datos
     dataSource = moduleFixture.get<DataSource>(DataSource);
+    testHelper = new CategoryTestHelper(dataSource);
   });
 
   // DESPUÉS DE CADA TEST: Limpiar la base de datos
@@ -92,11 +96,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
         .expect(400);
 
       //Assert
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toStrictEqual(['The name is required']);
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Bad Request');
-      expect(Array.isArray(response.body.message)).toBe(true);
+      ResponseTestHelper.expectBadRequest(response, ['The name is required']);
     });
 
     it('Should return error when name is not string', async () => {
@@ -112,11 +112,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
         .expect(400);
 
       //Assert
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toStrictEqual(['Invalid name']);
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Bad Request');
-      expect(Array.isArray(response.body.message)).toBe(true);
+      ResponseTestHelper.expectBadRequest(response, ['Invalid name']);
     });
   });
 
@@ -134,10 +130,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
 
     it('Should return 200, when find all categories', async () => {
       // Arrange: Crear categorías directamente en la BD
-      const categoryRepository = dataSource.getRepository(Category);
-      await categoryRepository.save({ name: 'Electrónica' });
-      await categoryRepository.save({ name: 'Ropa' });
-      await categoryRepository.save({ name: 'Hogar' });
+      await testHelper.createCategories(3);
 
       // Act
       const response = await request(app.getHttpServer())
@@ -155,8 +148,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   describe('GET /categories/:id', () => {
     it('Should return 200, when category was found', async () => {
       // Arrange: Crear una categoría en la BD
-      const categoryRepository = dataSource.getRepository(Category);
-      const savedCategory = await categoryRepository.save({ name: 'Electrónica' });
+      const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
 
       // Act
       const response = await request(app.getHttpServer())
@@ -190,8 +182,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   describe('PATCH /categories/:id', () => {
     it('Should return 200 when category was updated succesfully', async () => {
       //Arrange
-      const categoryRepository = dataSource.getRepository(Category);
-      const savedCategory = await categoryRepository.save({ name: 'Electrónica' });
+      const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
       const updateCategoryDto: UpdateCategoryDto = {
         name: 'Electronica actualizada'
       };
@@ -208,6 +199,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
       expect(response.body.name).toBe(updateCategoryDto.name);
 
       // Verificar que realmente se actualizó en la base de datos
+      const categoryRepository = dataSource.getRepository(Category);
       const updatedCategoryInDb = await categoryRepository.findOne({
         where: { id: savedCategory.id }
       });
@@ -229,10 +221,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
         .expect(404);
 
       //Assert
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toStrictEqual(`The Category with ID ${categoryId} does not found`);
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Not Found');
+      ResponseTestHelper.expectNotFound(response, `The Category with ID ${categoryId} does not found`);
     });
 
     it('Should return 400 when invalid id', async () => {
@@ -249,8 +238,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   describe('DELETE /categories/:id', () => {
     it('Should return 200 when category was removed successfully', async () => {
       //Arrange
-      const categoryRepository = dataSource.getRepository(Category);
-      const savedCategory = await categoryRepository.save({ name: 'Electrónica' });
+      const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
 
       //Act
       const response = await request(app.getHttpServer())
@@ -264,6 +252,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
       expect(response.text || response.body).toBe(expectedMessage);
 
       // Verificar que realmente se eliminó en la base de datos
+      const categoryRepository = dataSource.getRepository(Category);
       const removedCategoryInDb = await categoryRepository.findOne({
         where: { id: savedCategory.id }
       });
@@ -280,10 +269,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
         .expect(404);
 
       //Assert
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toBe(`The Category with ID ${categoryId} does not found`);
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Not Found');
+      ResponseTestHelper.expectNotFound(response, `The Category with ID ${categoryId} does not found`);
     });
 
     it('Should return 400 when invalid id', async () => {

@@ -13,10 +13,13 @@ import { App } from "supertest/types";
 import { DataSource } from "typeorm";
 import { testInvalidIdE2E } from "./helpers/e2e-test.helper";
 import { UpdateProductDto } from "src/products/dto/update-product.dto";
+import { ProductTestHelper } from "./helpers/product-test.helper";
+import { ResponseTestHelper } from "./helpers/response-test.helper";
 
 describe('ProductsController (e2e) - Tests de Integración', () => {
     let app: INestApplication<App>;
     let dataSource: DataSource;
+    let testHelper: ProductTestHelper;
 
     // ANTES DE TODOS LOS TESTS: Configurar la base de datos de prueba
     beforeAll(async () => {
@@ -45,6 +48,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
 
         // Obtener la conexión a la base de datos para limpiar datos
         dataSource = moduleFixture.get<DataSource>(DataSource);
+        testHelper = new ProductTestHelper(dataSource);
     });
 
     // DESPUÉS DE CADA TEST: Limpiar la base de datos
@@ -63,13 +67,10 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
         it('Should return product created successfully with image', async () => {
             //Arrage
             const createProductDto: CreateProductDto = productCreateDtos[0];
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            
             const productRepository = dataSource.getRepository(Product)
-            const categoryRepository = dataSource.getRepository(Category)
+            const { category } = await testHelper.createFullSetup()
             
-            const categorySaved: Category = await categoryRepository.save(createCategoryDto)
-            createProductDto.categoryId = categorySaved.id
+            createProductDto.categoryId = category.id
             createProductDto.image = 'img1.jpg'
 
             //Act
@@ -101,12 +102,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
                 .expect(404); // Esperar código 201 (Created)
 
             //Assert
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual([expectedErrorMessage])
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, [expectedErrorMessage])
         })
         it('Should return 400 when createProductDto is unprocessable', async () => {
             //Arrage
@@ -117,23 +113,18 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
                 .send(createProductDto)
                 .expect(400); // Esperar código 400 (Unprocessable)
 
-            expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toStrictEqual(['Invalid name', 'The name is required', 'Invalid price', 'The price is required', 'Invalid inventory', 'The inventory is required', 'Invalid categoryId', 'The categoryId is required']);
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Bad Request');
-            expect(Array.isArray(response.body.message)).toBe(true);
+            ResponseTestHelper.expectBadRequest(response, ['Invalid name', 'The name is required', 'Invalid price', 'The price is required', 'Invalid inventory', 'The inventory is required', 'Invalid categoryId', 'The categoryId is required']);
         })
     })
     describe('GET /products', () => {
         it('Should return all found products', async () => {
-            // Arrange: Crear categorías directamente en la BD
-            const categoryRepository = dataSource.getRepository(Category);
-            const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const categorySaved2: Category = await categoryRepository.save({ name: 'Electrónica' });
+            // Arrange: Crear categorías y productos directamente en la BD
+            const category1 = await testHelper.createCategory({ name: 'Electrónica' });
+            const category2 = await testHelper.createCategory({ name: 'Electrónica' });
             const productRepository = dataSource.getRepository(Product);
-            await productRepository.save({ ...productCreateDtos[0], categoryId: categorySaved1.id });
-            await productRepository.save({ ...productCreateDtos[1], categoryId: categorySaved1.id });
-            await productRepository.save({ ...productCreateDtos[0], categoryId: categorySaved2.id });
+            await productRepository.save({ ...productCreateDtos[0], category: category1 });
+            await productRepository.save({ ...productCreateDtos[1], category: category1 });
+            await productRepository.save({ ...productCreateDtos[0], category: category2 });
 
             // Act
             const response = await request(app.getHttpServer())
@@ -154,9 +145,8 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
         });
         it('Should return all found products filtered by category_id', async () => {
             // Arrange: Crear categorías y productos directamente en la BD
-            const categoryRepository = dataSource.getRepository(Category);
-            const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const categorySaved2: Category = await categoryRepository.save({ name: 'Ropa' });
+            const categorySaved1 = await testHelper.createCategory({ name: 'Electrónica' });
+            const categorySaved2 = await testHelper.createCategory({ name: 'Ropa' });
             const productRepository = dataSource.getRepository(Product);
             // Guardar productos con la relación de categoría completa
             await productRepository.save({ ...productCreateDtos[0], category: categorySaved1 });
@@ -182,8 +172,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
 
         it('Should return products with pagination (take and skip)', async () => {
             // Arrange: Crear múltiples productos
-            const categoryRepository = dataSource.getRepository(Category);
-            const categorySaved: Category = await categoryRepository.save({ name: 'Electrónica' });
+            const categorySaved = await testHelper.createCategory({ name: 'Electrónica' });
             const productRepository = dataSource.getRepository(Product);
             
             // Crear 5 productos con la relación de categoría completa
@@ -209,9 +198,8 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
 
         it('Should return products with category_id, take and skip combined', async () => {
             // Arrange: Crear categorías y productos
-            const categoryRepository = dataSource.getRepository(Category);
-            const categorySaved1: Category = await categoryRepository.save({ name: 'Electrónica' });
-            const categorySaved2: Category = await categoryRepository.save({ name: 'Ropa' });
+            const categorySaved1 = await testHelper.createCategory({ name: 'Electrónica' });
+            const categorySaved2 = await testHelper.createCategory({ name: 'Ropa' });
             const productRepository = dataSource.getRepository(Product);
             
             // 3 productos en categorySaved1
@@ -308,12 +296,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
                 .expect(404);
 
             //Assert
-            expect(response.body).toHaveProperty('error')
-            expect(response.body.error).toBe('Not Found')
-            expect(response.body).toHaveProperty('message')
-            expect(response.body.message).toStrictEqual([expectedErrorMessage])
-            expect(response.body).toHaveProperty('statusCode')
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, [expectedErrorMessage])
         });
         it('Should return 400 when invalid id', async () => {
             // Act & Assert
@@ -415,11 +398,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
                 .send(updateProductDto)
                 .expect(400); // Esperar código 201 (Created)
 
-            expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toStrictEqual(['Invalid name', 'The name is required', 'Invalid price', 'The price is required', 'Invalid inventory', 'The inventory is required', 'Invalid categoryId', 'The categoryId is required']);
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Bad Request');
-            expect(Array.isArray(response.body.message)).toBe(true);
+            ResponseTestHelper.expectBadRequest(response, ['Invalid name', 'The name is required', 'Invalid price', 'The price is required', 'Invalid inventory', 'The inventory is required', 'Invalid categoryId', 'The categoryId is required']);
         })
         it('Should return 400 when invalid id', async () => {
             //Arrange 
@@ -464,9 +443,7 @@ describe('ProductsController (e2e) - Tests de Integración', () => {
 
             //Assert
             expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toStrictEqual([`The Product with ID ${productId} does not found`]);
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Not Found');
+            ResponseTestHelper.expectNotFound(response, [`The Product with ID ${productId} does not found`]);
         });
 
         it('Should return 400 when invalid id', async () => {

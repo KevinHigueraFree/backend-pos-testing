@@ -19,11 +19,14 @@ import request from 'supertest';
 import { CreateCouponDto } from "src/coupons/dto/create-coupon.dto"
 import { addDays, subDays, format } from "date-fns"
 import { testInvalidIdE2E } from "./helpers/e2e-test.helper"
+import { TransactionTestHelper } from "./helpers/transaction-test.helper"
+import { ResponseTestHelper } from "./helpers/response-test.helper"
 
 
 describe('TransactionsController (e2e) - Integrations tests', () => {
     let app: INestApplication<App>
     let dataSource: DataSource
+    let testHelper: TransactionTestHelper
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -53,6 +56,7 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
         await app.init()
 
         dataSource = moduleFixture.get<DataSource>(DataSource)
+        testHelper = new TransactionTestHelper(dataSource)
     });
 
     afterEach(async () => {
@@ -89,36 +93,20 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
     describe('POST /transactions', () => {
         it('Should return transaction created successfully (sin cupón)', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
             const transactionRepository = dataSource.getRepository(Transaction)
+            const { products } = await testHelper.createFullSetup({ withCoupon: false })
+            const [product1, product2] = products
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
+            const initialInventory1 = product1.inventory
+            const initialInventory2 = product2.inventory
+            const quantity1 = 1
+            const quantity2 = 1
 
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-
-            const initialInventory1 = productSaved1.inventory
-            const initialInventory2 = productSaved2.inventory
-
-            const createTransactionDto: CreateTransactionDto = {
+            const createTransactionDto = testHelper.createTransactionDto(products, {
                 total: 2300,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                quantities: [quantity1, quantity2],
+                prices: [1500, 800]
+            })
 
             //Act
             const response = await request(app.getHttpServer())
@@ -143,63 +131,43 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
             expect(savedTransaction.contents).toHaveLength(2)
 
             // Verificar que los productos tienen el inventario actualizado
-            const product1Updated = await productRepository.findOne({ where: { id: productSaved1.id } })
-            const product2Updated = await productRepository.findOne({ where: { id: productSaved2.id } })
+            const productRepository = dataSource.getRepository(Product)
+            const product1Updated = await productRepository.findOne({ where: { id: product1.id } })
+            const product2Updated = await productRepository.findOne({ where: { id: product2.id } })
 
-            expect(product1Updated?.inventory).toBe(initialInventory1 - 1)
-            expect(product2Updated?.inventory).toBe(initialInventory2 - 1)
+            expect(product1Updated?.inventory).toBe(initialInventory1 - quantity1)
+            expect(product2Updated?.inventory).toBe(initialInventory2 - quantity2)
 
             // Ordenar los contenidos por ID del producto para tener un orden consistente
             const sortedContents = savedTransaction.contents.sort((a, b) => a.product.id - b.product.id)
 
             // Verificar los contenidos de la transacción
-            const content1 = sortedContents.find(c => c.product.id === productSaved1.id)
-            const content2 = sortedContents.find(c => c.product.id === productSaved2.id)
+            const content1 = sortedContents.find(c => c.product.id === product1.id)
+            const content2 = sortedContents.find(c => c.product.id === product2.id)
 
             expect(content1).toBeDefined()
-            expect(content1?.quantity).toBe(1)
+            expect(content1?.quantity).toBe(quantity1)
             expect(Number(content1?.price)).toBe(1500)
 
             expect(content2).toBeDefined()
-            expect(content2?.quantity).toBe(1)
+            expect(content2?.quantity).toBe(quantity2)
             expect(Number(content2?.price)).toBe(800)
         })
         it('Should return transaction created successfully (con cupón válido)', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
-            const couponRepository = dataSource.getRepository(Coupon)
             const transactionRepository = dataSource.getRepository(Transaction)
+            const { products, coupon } = await testHelper.createFullSetup({ withCoupon: true })
+            const [product1, product2] = products
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
+            const initialInventory1 = product1.inventory
+            const initialInventory2 = product2.inventory
 
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
-
-            const initialInventory1 = productSaved1.inventory
-            const initialInventory2 = productSaved2.inventory
-
-            const createTransactionDto: CreateTransactionDto = {
+            const createTransactionDto = testHelper.createTransactionDto(products, {
                 total: 2300,
-                coupon: couponSaved.name,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                coupon: coupon!.name,
+                quantities: [1, 1],
+                prices: [1500, 800]
+            })
 
             //Act
             const response = await request(app.getHttpServer())
@@ -216,18 +184,19 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 order: { id: 'ASC' }
             })
             const savedTransaction = allTransactions[0]
-            const discount = (couponSaved.percentage * createTransactionDto.total) / 100
+            const discount = (coupon!.percentage * createTransactionDto.total) / 100
             const totalWithDiscount = createTransactionDto.total - discount
 
             expect(savedTransaction).toBeDefined()
             expect(Number(savedTransaction.total)).toBe(totalWithDiscount)
-            expect(savedTransaction.coupon).toBe(createCouponDto.name)
+            expect(savedTransaction.coupon).toBe(coupon!.name)
             expect(Number(savedTransaction.discount)).toBe(discount)
             expect(savedTransaction.contents).toHaveLength(2)
 
             // Verificar que los productos tienen el inventario actualizado
-            const product1Updated = await productRepository.findOne({ where: { id: productSaved1.id } })
-            const product2Updated = await productRepository.findOne({ where: { id: productSaved2.id } })
+            const productRepository = dataSource.getRepository(Product)
+            const product1Updated = await productRepository.findOne({ where: { id: product1.id } })
+            const product2Updated = await productRepository.findOne({ where: { id: product2.id } })
 
             expect(product1Updated?.inventory).toBe(initialInventory1 - 1)
             expect(product2Updated?.inventory).toBe(initialInventory2 - 1)
@@ -236,8 +205,8 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
             const sortedContents = savedTransaction.contents.sort((a, b) => a.product.id - b.product.id)
 
             // Verificar los contenidos de la transacción
-            const content1 = sortedContents.find(c => c.product.id === productSaved1.id)
-            const content2 = sortedContents.find(c => c.product.id === productSaved2.id)
+            const content1 = sortedContents.find(c => c.product.id === product1.id)
+            const content2 = sortedContents.find(c => c.product.id === product2.id)
 
             expect(content1).toBeDefined()
             expect(content1?.quantity).toBe(1)
@@ -259,26 +228,22 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(400)
 
             //Assert
-            expect(response.body.message).toStrictEqual([
+            ResponseTestHelper.expectBadRequest(response, [
                 "Invalid total",
                 "The total cant'b be empty",
                 "The contents cant'b be empty",
                 "contents must be an array"
             ])
-            expect(response.body.error).toBe("Bad Request")
-            expect(response.body.statusCode).toBe(400)
         })
 
         it('Should return 404 when product does not exist', async () => {
             //Arrange
-            const couponRepository = dataSource.getRepository(Coupon)
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
-            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+            const coupon = await testHelper.createCoupon()
             const productId = 999
 
             const createTransactionDto: CreateTransactionDto = {
                 total: 2300,
-                coupon: couponSaved.name,
+                coupon: coupon.name,
                 contents: [
                     {
                         productId: productId,
@@ -295,30 +260,20 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(404)
 
             //Assert
-            expect(response.body.message).toStrictEqual([`The Product with ID ${productId} does not found`])
-            expect(response.body.error).toBe("Not Found")
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, [`The Product with ID ${productId} does not found`])
         })
         it('Should return 400 when product inventory is insufficient', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
-            const couponRepository = dataSource.getRepository(Coupon)
-
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto: CreateProductDto = productCreateDtos[0]
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
-
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved = await productRepository.save({ ...createProductDto, category: categorySaved, inventory: 0 })
-            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
+            const category = await testHelper.createCategory()
+            const product = await testHelper.createProduct(category, undefined, { inventory: 0 })
+            const coupon = await testHelper.createCoupon()
 
             const createTransactionDto: CreateTransactionDto = {
                 total: 1500,
-                coupon: couponSaved.name,
+                coupon: coupon.name,
                 contents: [
                     {
-                        productId: productSaved.id,
+                        productId: product.id,
                         quantity: 10,
                         price: 1500
                     }
@@ -332,9 +287,7 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(400)
 
             //Assert
-            expect(response.body.message).toStrictEqual([`The product ${productSaved.name} exced the enable quantity`])
-            expect(response.body.error).toBe("Bad Request")
-            expect(response.body.statusCode).toBe(400)
+            ResponseTestHelper.expectBadRequest(response, [`The product ${product.name} exced the enable quantity`])
         })
         it('Should return 422 when coupon is expired', async () => {
             //Arrange
@@ -366,9 +319,7 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(422)
 
             //Assert
-            expect(response.body.message).toStrictEqual('Expired coupon')
-            expect(response.body.error).toBe("Unprocessable Entity")
-            expect(response.body.statusCode).toBe(422)
+            ResponseTestHelper.expectUnprocessableEntity(response, 'Expired coupon')
         })
         it('Should return 404 when coupon does not exist', async () => {
             //Arrange
@@ -396,53 +347,29 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .send(createTransactionDto)
                 .expect(404)
 
-            expect(response.body.message).toStrictEqual(`The Coupon with name: ${couponName} does not found`)
-            expect(response.body.error).toBe("Not Found")
-            expect(response.body.statusCode).toBe(404)
+            //Assert
+            ResponseTestHelper.expectNotFound(response, `The Coupon with name: ${couponName} does not found`)
         })
     })
 
     describe('GET /transactions', () => {
         it('Should return 200 when found transactions', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
             const transactionRepository = dataSource.getRepository(Transaction)
+            const { products } = await testHelper.createFullSetup({ withCoupon: false })
+            const [product1, product2] = products
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
-
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-
-            const createTransactionDto1: CreateTransactionDto = {
+            const createTransactionDto1 = testHelper.createTransactionDto(products, {
                 total: 2300,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                quantities: [1, 1],
+                prices: [1500, 800]
+            })
 
-            const createTransactionDto2: CreateTransactionDto = {
+            const createTransactionDto2 = testHelper.createTransactionDto([product1], {
                 total: 2300,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 10,
-                        price: 1500
-                    },
-                ]
-            } as CreateTransactionDto
+                quantities: [10],
+                prices: [1500]
+            })
 
             await transactionRepository.save({ ...createTransactionDto1 })
             await transactionRepository.save({ ...createTransactionDto2 })
@@ -470,44 +397,21 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
 
         it('Should return 200 when filtering by transactionDate', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
             const transactionRepository = dataSource.getRepository(Transaction)
+            const { products } = await testHelper.createFullSetup({ withCoupon: false })
+            const [product1, product2] = products
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
-
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-
-            const createTransactionDto1: CreateTransactionDto = {
+            const createTransactionDto1 = testHelper.createTransactionDto(products, {
                 total: 2300,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                quantities: [1, 1],
+                prices: [1500, 800]
+            })
 
-            const createTransactionDto2: CreateTransactionDto = {
+            const createTransactionDto2 = testHelper.createTransactionDto([product1], {
                 total: 2300,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 10,
-                        price: 1500
-                    },
-                ]
-            } as CreateTransactionDto
+                quantities: [10],
+                prices: [1500]
+            })
 
             await transactionRepository.save({ ...createTransactionDto1 })
             await transactionRepository.save({ ...createTransactionDto2 })
@@ -534,46 +438,22 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(400)
 
             //Assert
-            expect(response.body.message).toStrictEqual("Invalid Date")
-            expect(response.body.error).toBe("Bad Request")
-            expect(response.body.statusCode).toBe(400)
+            ResponseTestHelper.expectBadRequest(response, "Invalid Date")
         })
     })
 
     describe('GET /transactions:id', () => {
         it('Should return 200 when found transaction', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
             const transactionRepository = dataSource.getRepository(Transaction)
-            const couponRepository = dataSource.getRepository(Coupon)
+            const { products, coupon } = await testHelper.createFullSetup({ withCoupon: true })
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
-
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
-
-            const createTransactionDto: CreateTransactionDto = {
+            const createTransactionDto = testHelper.createTransactionDto(products, {
                 total: 2300,
-                coupon: couponSaved.name,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                coupon: coupon!.name,
+                quantities: [1, 1],
+                prices: [1500, 800]
+            })
 
             const transactionSaved = await transactionRepository.save(createTransactionDto)
 
@@ -600,9 +480,7 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .get(`/transactions/${transactionId}`)
                 .expect(404)
             //Assert
-            expect(response.body.message).toStrictEqual(`The Transaction with ID ${transactionId} does not found`)
-            expect(response.body.error).toBe("Not Found")
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, `The Transaction with ID ${transactionId} does not found`)
         })
 
         it('Should return 400 when invalid id', async () => {
@@ -614,37 +492,15 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
     describe('DELETE /transactions:id', () => {
         it('Should return 200 when transaction was removed successfully', async () => {
             //Arrange
-            const categoryRepository = dataSource.getRepository(Category)
-            const productRepository = dataSource.getRepository(Product)
             const transactionRepository = dataSource.getRepository(Transaction)
-            const couponRepository = dataSource.getRepository(Coupon)
+            const { products, coupon } = await testHelper.createFullSetup({ withCoupon: true })
 
-            const createCategoryDto: CreateCategoryDto = categoryCreateDtos[0]
-            const createProductDto1: CreateProductDto = productCreateDtos[0]
-            const createProductDto2: CreateProductDto = productCreateDtos[1]
-            const createCouponDto: CreateCouponDto = couponCreateDtos[0]
-
-            const categorySaved = await categoryRepository.save({ ...createCategoryDto })
-            const productSaved1 = await productRepository.save({ ...createProductDto1, category: categorySaved })
-            const productSaved2 = await productRepository.save({ ...createProductDto2, category: categorySaved })
-            const couponSaved = await couponRepository.save({ ...createCouponDto, expirationDate: addDays(new Date(), 1) as any })
-
-            const createTransactionDto: CreateTransactionDto = {
+            const createTransactionDto = testHelper.createTransactionDto(products, {
                 total: 2300,
-                coupon: couponSaved.name,
-                contents: [
-                    {
-                        productId: productSaved1.id,
-                        quantity: 1,
-                        price: 1500
-                    },
-                    {
-                        productId: productSaved2.id,
-                        quantity: 1,
-                        price: 800
-                    }
-                ]
-            } as CreateTransactionDto
+                coupon: coupon!.name,
+                quantities: [1, 1],
+                prices: [1500, 800]
+            })
 
             const transactionSaved = await transactionRepository.save(createTransactionDto)
 
@@ -666,14 +522,12 @@ describe('TransactionsController (e2e) - Integrations tests', () => {
                 .expect(404)
 
             //Assert
-            expect(response.body.message).toStrictEqual(`The Transaction with ID ${transactionId} does not found`)
-            expect(response.body.error).toBe("Not Found")
-            expect(response.body.statusCode).toBe(404)
+            ResponseTestHelper.expectNotFound(response, `The Transaction with ID ${transactionId} does not found`)
 
         })
         it('Should return 400 when invalid id', async () => {
             // Act & Assert
-            await testInvalidIdE2E(app, 'get', '/transactions');
+            await testInvalidIdE2E(app, 'delete', '/transactions');
         })
     })
 
