@@ -155,36 +155,36 @@
 &nbsp;
 @Injectable()
 export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >SeederService </span>{</span></span>
-    // declaramos los repositorios para acceder a la bd
-<span class="fstat-no" title="function not covered" >    constructor(</span>
-        @InjectRepository(Category) private readonly <span class="cstat-no" title="statement not covered" >categoryRepository: R</span>epository&lt;Category&gt;,
-        @InjectRepository(Product) private readonly <span class="cstat-no" title="statement not covered" >productRepository: R</span>epository&lt;Product&gt;,
-        private <span class="cstat-no" title="statement not covered" >dataSource: D</span>ataSource
-    ) { }
+  // declaramos los repositorios para acceder a la bd
+<span class="fstat-no" title="function not covered" >  constructor(</span>
+    @InjectRepository(Category) private readonly <span class="cstat-no" title="statement not covered" >categoryRepository: R</span>epository&lt;Category&gt;,
+    @InjectRepository(Product) private readonly <span class="cstat-no" title="statement not covered" >productRepository: R</span>epository&lt;Product&gt;,
+    private <span class="cstat-no" title="statement not covered" >dataSource: D</span>ataSource
+  ) {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >    async </span>onModuleInit() {
-        const connection = <span class="cstat-no" title="statement not covered" >this.dataSource</span>
-<span class="cstat-no" title="statement not covered" >        await connection.dropDatabase()</span>
-<span class="cstat-no" title="statement not covered" >        await connection.synchronize()</span>
+<span class="fstat-no" title="function not covered" >  async </span>onModuleInit() {
+    const connection = <span class="cstat-no" title="statement not covered" >this.dataSource;</span>
+<span class="cstat-no" title="statement not covered" >    await connection.dropDatabase();</span>
+<span class="cstat-no" title="statement not covered" >    await connection.synchronize();</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  async </span>seed() {
+<span class="cstat-no" title="statement not covered" >    await this.categoryRepository.save(categories);</span>
+<span class="cstat-no" title="statement not covered" >    for await (const seedProduct of products) {</span>
+      const category = <span class="cstat-no" title="statement not covered" >await this.categoryRepository.findOneBy({ id: seedProduct.categoryId });</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >      if (category) {</span>
+        const product = <span class="cstat-no" title="statement not covered" >new Product();</span>
+<span class="cstat-no" title="statement not covered" >        product.name = seedProduct.name;</span>
+<span class="cstat-no" title="statement not covered" >        product.image = seedProduct.image;</span>
+<span class="cstat-no" title="statement not covered" >        product.price = seedProduct.price;</span>
+<span class="cstat-no" title="statement not covered" >        product.inventory = seedProduct.inventory;</span>
+<span class="cstat-no" title="statement not covered" >        product.category = category;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        await this.productRepository.save(product);</span>
+      }
     }
-&nbsp;
-<span class="fstat-no" title="function not covered" >    async </span>seed() {
-<span class="cstat-no" title="statement not covered" >        await this.categoryRepository.save(categories);</span>
-<span class="cstat-no" title="statement not covered" >        for await (const seedProduct of products) {</span>
-            const category = <span class="cstat-no" title="statement not covered" >await this.categoryRepository.findOneBy({ id: seedProduct.categoryId })</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >            if (category) {</span>
-                const product = <span class="cstat-no" title="statement not covered" >new Product()</span>
-<span class="cstat-no" title="statement not covered" >                product.name = seedProduct.name</span>
-<span class="cstat-no" title="statement not covered" >                product.image = seedProduct.image</span>
-<span class="cstat-no" title="statement not covered" >                product.price = seedProduct.price</span>
-<span class="cstat-no" title="statement not covered" >                product.inventory = seedProduct.inventory</span>
-<span class="cstat-no" title="statement not covered" >                product.category = category</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >                await this.productRepository.save(product)</span>
-            }
-        }
-    }
+  }
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -193,7 +193,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-26T04:37:29.091Z
+                at 2025-12-05T02:55:13.145Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

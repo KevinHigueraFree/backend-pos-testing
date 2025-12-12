@@ -115,8 +115,7 @@
 <a name='L50'></a><a href='#L50'>50</a>
 <a name='L51'></a><a href='#L51'>51</a>
 <a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a>
-<a name='L54'></a><a href='#L54'>54</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L53'></a><a href='#L53'>53</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -125,13 +124,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -177,21 +175,20 @@
  * @param id - El ID a validar
  * @param expectedMessage - Mensaje de error esperado (opcional, por defecto "Invalid ID")
  */
-export const <span class="cstat-no" title="statement not covered" >testInvalidIdValidation = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >a</span>sync </span>(</span>
-    id: any, 
-    expectedMessage: string = <span class="branch-0 cbranch-no" title="branch not covered" >"Invalid ID"</span>
-) =&gt; {
-    const idValidationPipe = <span class="cstat-no" title="statement not covered" >new IdValidationPipe();</span>
-    
-    // Act &amp; Assert - Probar el pipe directamente
-<span class="cstat-no" title="statement not covered" >    await expect(idValidationPipe.transform(id, { type: 'param', data: 'id' })).rejects.toThrow(BadRequestException);</span>
-    
-    // Verificar el mensaje específico
-<span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >        await idValidationPipe.transform(id, { type: 'param', data: 'id' });</span>
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >        expect(error.response.message).toBe(expectedMessage);</span>
-    }
+export const <span class="cstat-no" title="statement not covered" >testInvalidIdValidation = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >a</span>sync </span>(id: any, expectedMessage: string = <span class="branch-0 cbranch-no" title="branch not covered" >'Invalid ID')</span> =&gt; {</span>
+  const idValidationPipe = <span class="cstat-no" title="statement not covered" >new IdValidationPipe();</span>
+&nbsp;
+  // Act &amp; Assert - Probar el pipe directamente
+<span class="cstat-no" title="statement not covered" >  await expect(idValidationPipe.transform(id, { type: 'param', data: 'id' })).rejects.toThrow(</span>
+    BadRequestException
+  );
+&nbsp;
+  // Verificar el mensaje específico
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    await idValidationPipe.transform(id, { type: 'param', data: 'id' });</span>
+  } catch (error) {
+<span class="cstat-no" title="statement not covered" >    expect(error.response.message).toBe(expectedMessage);</span>
+  }
 };
 &nbsp;
 /**
@@ -200,7 +197,7 @@ export const <span class="cstat-no" title="statement not covered" >testInvalidId
  * @param methodName - Nombre del método del servicio
  */
 export const <span class="cstat-no" title="statement not covered" >expectServiceNotCalled = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>s</span>ervice: any, methodName: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    expect(service[methodName]).not.toHaveBeenCalled();</span>
+<span class="cstat-no" title="statement not covered" >  expect(service[methodName]).not.toHaveBeenCalled();</span>
 };
 &nbsp;
 /**
@@ -211,16 +208,16 @@ export const <span class="cstat-no" title="statement not covered" >expectService
  * @param expectedMessage - Mensaje de error esperado (opcional)
  */
 export const <span class="cstat-no" title="statement not covered" >testInvalidIdWithServiceValidation = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >a</span>sync </span>(</span>
-    id: any,
-    service: any,
-    methodName: string,
-    expectedMessage: string = <span class="branch-0 cbranch-no" title="branch not covered" >"Invalid ID"</span>
+  id: any,
+  service: any,
+  methodName: string,
+  expectedMessage: string = <span class="branch-0 cbranch-no" title="branch not covered" >'Invalid ID'</span>
 ) =&gt; {
-    // Probar validación del pipe
-<span class="cstat-no" title="statement not covered" >    await testInvalidIdValidation(id, expectedMessage);</span>
-    
-    // Verificar que el servicio NO fue llamado
-<span class="cstat-no" title="statement not covered" >    expectServiceNotCalled(service, methodName);</span>
+  // Probar validación del pipe
+<span class="cstat-no" title="statement not covered" >  await testInvalidIdValidation(id, expectedMessage);</span>
+&nbsp;
+  // Verificar que el servicio NO fue llamado
+<span class="cstat-no" title="statement not covered" >  expectServiceNotCalled(service, methodName);</span>
 };
 &nbsp;</pre></td></tr></table></pre>
 
@@ -229,7 +226,7 @@ export const <span class="cstat-no" title="statement not covered" >testInvalidId
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-26T04:37:29.091Z
+                at 2025-12-05T02:55:13.145Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

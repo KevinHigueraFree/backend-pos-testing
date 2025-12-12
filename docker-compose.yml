@@ -1,0 +1,77 @@
+# ============================================
+# DOCKER COMPOSE - BACKEND CON RENDER POSTGRES
+# ============================================
+# Este archivo configura solo el backend en Docker
+# La base de datos PostgreSQL está en Render (externa)
+
+version: '3.8'
+
+# Definimos los servicios (contenedores) que queremos ejecutar
+services:
+  # ============================================
+  # Backend NestJS - MODO DESARROLLO
+  # ============================================
+  backend:
+    # Construir la imagen desde el Dockerfile de desarrollo
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    
+    # Nombre del contenedor
+    container_name: pos_backend
+    
+    # ============================================
+    # VOLÚMENES: Para Hot Reload en Desarrollo
+    # ============================================
+    # Montamos el código fuente como volumen para que los cambios
+    # se reflejen automáticamente sin reconstruir la imagen
+    volumes:
+      # Montar el código fuente (excluyendo node_modules)
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      - ./nest-cli.json:/app/nest-cli.json
+      # node_modules se mantiene en el contenedor (no se monta)
+      - /app/node_modules
+
+    env_file:
+      - .env    
+    # Variables de entorno para la aplicación
+    environment:
+      # Puerto donde correrá la aplicación (dentro del contenedor)
+      PORT: 3001
+      # Node environment: development para hot-reload
+      NODE_ENV: development
+      # Variable para que el watch mode funcione mejor en Docker
+      CHOKIDAR_USEPOLLING: "true"
+      
+      # ============================================
+      # CONFIGURACIÓN DE BASE DE DATOS - RENDER
+      # ============================================
+      # OPCIÓN 1: Usar DATABASE_URL (Recomendado - más simple)
+      # Reemplaza con tu URL de Render (External Database URL)
+      # Formato: postgres://usuario:password@host:puerto/database
+      # DATABASE_URL: postgres://usuario:password@dpg-xxxxx-a.oregon-postgres.render.com:5432/dbname
+      
+      # ============================================
+      # OPCIÓN 2: Usar variables individuales
+      # ============================================
+      # Si prefieres usar variables separadas, comenta DATABASE_URL arriba
+      # y descomenta estas líneas, luego reemplaza con tus valores de Render:
+      #
+      #DATABASE_HOST: dpg-d46lqp6mcj7s73e8n8m0-a.oregon-postgres.render.com
+      #DATABASE_PORT: 5432
+      #DATABASE_USER: pos_exzg_user
+      #DATABASE_PASS: XRAyJM0YwIGibJqOQTjkO9HpjZLFfSw0
+      #DATABASE_NAME: pos_exzg
+      DATABASE_SSL: "true"  # Render siempre requiere SSL
+    
+    # Puertos: exponemos el puerto 3001
+    ports:
+      - "3001:3001"
+        
+    # Reiniciar automáticamente si el contenedor se cae
+    restart: unless-stopped
+
+

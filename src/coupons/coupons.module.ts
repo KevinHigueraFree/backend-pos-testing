@@ -8,6 +8,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [TypeOrmModule.forFeature([Coupon])],
   controllers: [CouponsController],
   providers: [CouponsService],
-  exports: [CouponsService]
+  exports: [CouponsService],
 })
-export class CouponsModule { }
+export class CouponsModule {}

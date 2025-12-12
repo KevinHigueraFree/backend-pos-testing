@@ -12,4 +12,4 @@ import { CouponsModule } from '../coupons/coupons.module';
   controllers: [TransactionsController],
   providers: [TransactionsService],
 })
-export class TransactionsModule { }
+export class TransactionsModule {}

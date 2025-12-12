@@ -159,35 +159,30 @@
 <a name='L94'></a><a href='#L94'>94</a>
 <a name='L95'></a><a href='#L95'>95</a>
 <a name='L96'></a><a href='#L96'>96</a>
-<a name='L97'></a><a href='#L97'>97</a>
-<a name='L98'></a><a href='#L98'>98</a>
-<a name='L99'></a><a href='#L99'>99</a>
-<a name='L100'></a><a href='#L100'>100</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L97'></a><a href='#L97'>97</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -260,7 +255,6 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -271,64 +265,62 @@ import { Category } from '../categories/entities/category.entity';
 &nbsp;
 @Injectable()
 export class ProductsService {
-&nbsp;
   constructor(
-    @InjectRepository(Product) private readonly productRepository: Repository<span class="branch-1 cbranch-no" title="branch not covered" >&lt;Product&gt;,</span>// repository realiza variabas funciones pero pasandole un generic, el codigo se adapta
-    @InjectRepository(Category) private readonly categoryRepository: Repository<span class="branch-1 cbranch-no" title="branch not covered" >&lt;Category&gt;/</span>/ repository realiza variabas funciones pero pasandole un generic, el codigo se adapta
-  ) { }
+    @InjectRepository(Product) private readonly productRepository: Repository<span class="branch-1 cbranch-no" title="branch not covered" >&lt;Product&gt;,</span> // repository realiza variabas funciones pero pasandole un generic, el codigo se adapta
+    @InjectRepository(Category) private readonly categoryRepository: Repository<span class="branch-1 cbranch-no" title="branch not covered" >&lt;Category&gt; </span>// repository realiza variabas funciones pero pasandole un generic, el codigo se adapta
+  ) {}
 &nbsp;
   async create(createProductDto: CreateProductDto) {
-    const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId })
+    const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId });
     if (!category) {
-      let errors: string[] = [];
+      const errors: string[] = [];
       errors.push(`The Category with ID ${createProductDto.categoryId} does not found`);
       throw new NotFoundException(errors);
     }
 &nbsp;
     return this.productRepository.save({
       ...createProductDto,
-      category: category
-    })
-&nbsp;
+      category: category,
+    });
   }
 &nbsp;
   async findAll(categoryId: number | null, take: number, skip: number) {
     const options: FindManyOptions&lt;Product&gt; = {
       relations: {
-        category: true
+        category: true,
       },
       order: {
-        id: 'DESC'
+        id: 'DESC',
       },
       take,
-      skip
-    }
+      skip,
+    };
 &nbsp;
     if (categoryId) {
       options.where = {
         category: {
-          id: categoryId
-        }
-      }
+          id: categoryId,
+        },
+      };
     }
 &nbsp;
     //products y total es para ponerle nombre a los datos a el numero. de los regsitros contados
-    const [products, total] = await this.productRepository.findAndCount(options)
-    return { total, products }
+    const [products, total] = await this.productRepository.findAndCount(options);
+    return { total, products };
   }
 &nbsp;
   async findOne(id: number) {
     const product = await this.productRepository.findOne({
       where: {
-        id
+        id,
       },
       relations: {
-        category: true
-      }
+        category: true,
+      },
     });
 &nbsp;
     if (!product) {
-      let errors: string[] = [];
+      const errors: string[] = [];
       errors.push(`The Product with ID ${id} does not found`);
       throw new NotFoundException(errors);
     }
@@ -337,27 +329,26 @@ export class ProductsService {
   }
 &nbsp;
   async update(id: number, updateProductDto: UpdateProductDto) {
-    const product = await this.findOne(id)
-    Object.assign(product, updateProductDto)
+    const product = await this.findOne(id);
+    Object.assign(product, updateProductDto);
 &nbsp;
     <span class="missing-if-branch" title="else path not taken" >E</span>if (updateProductDto.categoryId) {
-      const category = await this.categoryRepository.findOneBy({ id: updateProductDto.categoryId })
+      const category = await this.categoryRepository.findOneBy({ id: updateProductDto.categoryId });
       if (!category) {
-        let errors: string[] = []
+        const errors: string[] = [];
         errors.push(`The Category with ID ${updateProductDto.categoryId} does not found`);
         throw new NotFoundException(errors);
       }
-      product.category = category
+      product.category = category;
     }
 &nbsp;
-    return await this.productRepository.save(product)
+    return await this.productRepository.save(product);
   }
 &nbsp;
   async remove(id: number) {
-    const product = await this.findOne(id)
-    await this.productRepository.remove(product)
-    return `The Product with ID ${id} was removed`
-&nbsp;
+    const product = await this.findOne(id);
+    await this.productRepository.remove(product);
+    return `The Product with ID ${id} was removed`;
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -367,7 +358,7 @@ export class ProductsService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-26T04:37:29.091Z
+                at 2025-12-05T02:55:13.145Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

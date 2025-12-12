@@ -25,7 +25,11 @@ export class ProductTestHelper {
   /**
    * Crea un producto de prueba asociado a una categoría
    */
-  async createProduct(category: Category, dto?: CreateProductDto, overrides?: Partial<Product>): Promise<Product> {
+  async createProduct(
+    category: Category,
+    dto?: CreateProductDto,
+    overrides?: Partial<Product>
+  ): Promise<Product> {
     const productRepository = this.dataSource.getRepository(Product);
     const createDto = dto || productCreateDtos[0];
     return await productRepository.save({ ...createDto, category, ...overrides });
@@ -43,8 +47,11 @@ export class ProductTestHelper {
     product: Product;
   }> {
     const category = await this.createCategory(options?.categoryDto);
-    const product = await this.createProduct(category, options?.productDto, options?.productOverrides);
+    const product = await this.createProduct(
+      category,
+      options?.productDto,
+      options?.productOverrides
+    );
     return { category, product };
   }
 }
-

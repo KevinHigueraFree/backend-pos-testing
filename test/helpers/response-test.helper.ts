@@ -16,7 +16,7 @@ export class ResponseTestHelper {
     expect(response.status).toBe(statusCode);
     expect(response.body.error).toBe(error);
     expect(response.body.statusCode).toBe(statusCode);
-    
+
     if (Array.isArray(message)) {
       expect(response.body.message).toStrictEqual(message);
     } else {
@@ -45,4 +45,3 @@ export class ResponseTestHelper {
     this.expectErrorResponse(response, 422, 'Unprocessable Entity', message);
   }
 }
-

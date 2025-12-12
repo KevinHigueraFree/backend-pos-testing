@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { CouponsService } from './coupons.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
@@ -7,7 +17,7 @@ import { ApplyCouponDto } from './dto/apply-coupon';
 
 @Controller('coupons')
 export class CouponsController {
-  constructor(private readonly couponsService: CouponsService) { }
+  constructor(private readonly couponsService: CouponsService) {}
 
   @Post()
   create(@Body() createCouponDto: CreateCouponDto) {
@@ -37,6 +47,6 @@ export class CouponsController {
   @Post('/apply-coupon')
   @HttpCode(HttpStatus.OK)
   applyCoupon(@Body() applyCouponDto: ApplyCouponDto) {
-    return this.couponsService.applyCoupon(applyCouponDto.name)
+    return this.couponsService.applyCoupon(applyCouponDto.name);
   }
 }

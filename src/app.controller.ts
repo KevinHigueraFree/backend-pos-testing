@@ -16,7 +16,7 @@ export class AppController {
   }
 
   @Patch()
-  patchHello(): string{
+  patchHello(): string {
     return this.appService.patchHello();
   }
 }

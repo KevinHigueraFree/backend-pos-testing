@@ -6,13 +6,21 @@ import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { categories, categoryCreateDtos, categoryUpdateDtos, getCategoryById, getCategoryUpdatedByIdAndDto, productCreateDtos, updatedCategories } from '../common/test-data';
+import {
+  categories,
+  categoryCreateDtos,
+  categoryUpdateDtos,
+  getCategoryById,
+  getCategoryUpdatedByIdAndDto,
+  productCreateDtos,
+  updatedCategories,
+} from '../common/test-data';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
   let repository: Repository<Category>;
 
-  // Mock del repository
+  // Mock of repository
   const mockRepository = {
     save: jest.fn(),
     find: jest.fn(),
@@ -58,11 +66,7 @@ describe('CategoriesService', () => {
   describe('findAll', () => {
     it('should return an array of categories', async () => {
       // Arrange
-      const expectedCategories = [
-        categories[0],
-        categories[1],
-        categories[3]
-      ];
+      const expectedCategories = [categories[0], categories[1], categories[3]];
       mockRepository.find.mockResolvedValue(expectedCategories);
 
       // Act
@@ -109,7 +113,9 @@ describe('CategoriesService', () => {
 
       // Act & Assert
       await expect(service.findOne(categoryId)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(categoryId)).rejects.toThrow(`The Category with ID ${categoryId} does not found`);
+      await expect(service.findOne(categoryId)).rejects.toThrow(
+        `The Category with ID ${categoryId} does not found`
+      );
     });
   });
 
@@ -132,7 +138,7 @@ describe('CategoriesService', () => {
       expect(service.findOne).toHaveBeenCalledWith(categoryId);
       expect(mockRepository.save).toHaveBeenCalledWith({
         ...existingCategory,
-        name: updateDto.name
+        name: updateDto.name,
       });
       expect(result).toEqual(expectedUpdatedCategory);
     });
@@ -141,7 +147,9 @@ describe('CategoriesService', () => {
       // Arrange
       const categoryId = 999;
       const updateDto: UpdateCategoryDto = { name: 'Updated' };
-      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('The category does not found'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new NotFoundException('The category does not found'));
 
       // Act & Assert
       await expect(service.update(categoryId, updateDto)).rejects.toThrow(NotFoundException);
@@ -168,7 +176,9 @@ describe('CategoriesService', () => {
     it('should throw NotFoundException when removing non-existent category', async () => {
       // Arrange
       const categoryId = 999;
-      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('The category does not found'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new NotFoundException('The category does not found'));
 
       // Act & Assert
       await expect(service.remove(categoryId)).rejects.toThrow(NotFoundException);

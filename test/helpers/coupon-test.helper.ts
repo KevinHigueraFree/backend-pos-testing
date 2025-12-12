@@ -18,7 +18,7 @@ export class CouponTestHelper {
     const createDto = dto || couponCreateDtos[0];
     return await couponRepository.save({
       ...createDto,
-      expirationDate: addDays(new Date(), daysFromNow) as any
+      expirationDate: addDays(new Date(), daysFromNow),
     });
   }
 
@@ -30,7 +30,7 @@ export class CouponTestHelper {
     const createDto = dto || couponCreateDtos[0];
     return await couponRepository.save({
       ...createDto,
-      expirationDate: subDays(new Date(), daysAgo) as any
+      expirationDate: subDays(new Date(), daysAgo),
     });
   }
 
@@ -45,4 +45,3 @@ export class CouponTestHelper {
     return coupons;
   }
 }
-

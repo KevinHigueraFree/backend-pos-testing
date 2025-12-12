@@ -5,38 +5,31 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { DataSource, In } from 'typeorm';
 
-// Importar todos los módulos necesarios para el flujo completo
 import { CategoriesModule } from '../src/categories/categories.module';
 import { ProductsModule } from '../src/products/products.module';
 import { CouponsModule } from '../src/coupons/coupons.module';
 import { TransactionsModule } from '../src/transactions/transactions.module';
 
-// Importar entidades
 import { Category } from '../src/categories/entities/category.entity';
 import { Product } from '../src/products/entities/product.entity';
 import { Coupon } from '../src/coupons/entities/coupon.entity';
-import { Transaction, TransactionContents } from '../src/transactions/entities/transaction.entity';
+import { Transaction, TransactionContents } from 'src/transactions/entities/transaction.entity';
 
 /**
  * TEST END-TO-END (E2E)
- * 
- * Este test prueba un flujo completo del sistema POS:
- * 1. Crear una categoría
- * 2. Crear productos en esa categoría
- * 3. Crear un cupón de descuento
- * 4. Crear una transacción con productos y cupón
- * 5. Verificar que todo el flujo funciona correctamente
- * 
- * Diferencia con test de integración:
- * - E2E: Prueba múltiples módulos trabajando juntos (flujo completo)
- * - Integración: Prueba un solo módulo con sus dependencias
+ *
+ * Test to verify success full flow of POS:
+ * 1. Create category
+ * 2. Create products with that category
+ * 3. Create coupon
+ * 4. Create transaction with products and coupon
+ * 5. Verify success flow
  */
 
-describe('Flujo Completo POS (E2E)', () => {
+describe('Full flow POS (E2E)', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
 
-  // Datos que se usarán en el flujo completo
   let createdCategory: Category;
   let createdProducts: Product[] = [];
   let createdCoupon: Coupon;
@@ -45,12 +38,11 @@ describe('Flujo Completo POS (E2E)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        // Importar TODOS los módulos necesarios para el flujo completo
         CategoriesModule,
         ProductsModule,
         CouponsModule,
         TransactionsModule,
-        // Configurar TypeORM para tests (SQLite en memoria)
+        // Configure TypeORM to tests (SQLite on memory)
         TypeOrmModule.forRoot({
           type: 'sqlite',
           database: ':memory:',
@@ -68,14 +60,14 @@ describe('Flujo Completo POS (E2E)', () => {
   });
 
   afterEach(async () => {
-    // Limpiar todas las tablas después de cada test
+    // Clean all tables after each test
     await dataSource.getRepository(TransactionContents).clear();
     await dataSource.getRepository(Transaction).clear();
     await dataSource.getRepository(Product).clear();
     await dataSource.getRepository(Category).clear();
     await dataSource.getRepository(Coupon).clear();
-    
-    // Resetear variables
+
+    // Reset variables
     createdCategory = null as any;
     createdProducts = [];
     createdCoupon = null as any;
@@ -86,60 +78,54 @@ describe('Flujo Completo POS (E2E)', () => {
     await app.close();
   });
 
-  describe('Flujo completo: Crear venta con productos y cupón', () => {
-    it('debería completar todo el flujo: categoría → productos → cupón → transacción', async () => {
-      // ============================================
-      // PASO 1: Crear una categoría
-      // ============================================
+  describe('Full flow: create product and coupon', () => {
+    it('Should full flow transaction: category → product → coupon → transaction', async () => {
+      // Arrange
+      const productsData = [
+        {
+          name: 'Laptop',
+          price: 999.99,
+          inventory: 10,
+          categoryId: 0,
+        },
+        {
+          name: 'Mouse',
+          price: 29.99,
+          inventory: 50,
+          categoryId: 0,
+        },
+        {
+          name: 'Teclado',
+          price: 79.99,
+          inventory: 30,
+          categoryId: 0,
+        },
+      ];
+      const futureDate = new Date();
+      futureDate.setMonth(futureDate.getMonth() + 1); // 1 month more
+      const expirationTimestamp = futureDate.getTime(); // Timestamp in milliseconds
+      const totalBeforeDiscount = 999.99 + 29.99 * 2 + 79.99;
+      const expectedDiscount = totalBeforeDiscount * 0.1;
+      const expectedTotal = totalBeforeDiscount - expectedDiscount;
+
+      // Act - Create category
       const categoryResponse = await request(app.getHttpServer())
         .post('/categories')
         .send({ name: 'Electrónica' })
         .expect(201);
-
       createdCategory = categoryResponse.body;
-      expect(createdCategory).toHaveProperty('id');
-      expect(createdCategory.name).toBe('Electrónica');
 
-      // Verificar que se guardó en la BD
-      const categoryInDb = await dataSource
-        .getRepository(Category)
-        .findOne({ where: { id: createdCategory.id } });
-      expect(categoryInDb).toBeDefined();
-
-      // ============================================
-      // PASO 2: Crear productos en esa categoría
-      // ============================================
-      const productsData = [
-        { name: 'Laptop', price: 999.99, inventory: 10, categoryId: createdCategory.id },
-        { name: 'Mouse', price: 29.99, inventory: 50, categoryId: createdCategory.id },
-        { name: 'Teclado', price: 79.99, inventory: 30, categoryId: createdCategory.id },
-      ];
-
+      // Act - Create products with category
+      productsData.forEach((data) => (data.categoryId = createdCategory.id));
       for (const productData of productsData) {
         const productResponse = await request(app.getHttpServer())
           .post('/products')
           .send(productData)
           .expect(201);
-
         createdProducts.push(productResponse.body);
-        expect(productResponse.body).toHaveProperty('id');
-        expect(productResponse.body.name).toBe(productData.name);
       }
 
-      // Verificar que los productos se guardaron con la categoría correcta
-      const productsInDb = await dataSource
-        .getRepository(Product)
-        .find({ where: { id: In(createdProducts.map(p => p.id)) } });
-      expect(productsInDb).toHaveLength(3);
-
-      // ============================================
-      // PASO 3: Crear un cupón de descuento
-      // ============================================
-      const futureDate = new Date();
-      futureDate.setMonth(futureDate.getMonth() + 1); // 1 mes en el futuro
-      // El DTO espera un número (timestamp), pero TypeORM lo convierte a Date
-      const expirationTimestamp = futureDate.getTime(); // Timestamp en milisegundos
-
+      // Act - Create coupon
       const couponResponse = await request(app.getHttpServer())
         .post('/coupons')
         .send({
@@ -148,48 +134,72 @@ describe('Flujo Completo POS (E2E)', () => {
           expirationDate: expirationTimestamp,
         })
         .expect(201);
-
       createdCoupon = couponResponse.body;
-      expect(createdCoupon).toHaveProperty('id');
-      expect(createdCoupon.name).toBe('DESCUENTO10');
-      expect(createdCoupon.percentage).toBe(10);
 
-      // ============================================
-      // PASO 4: Crear una transacción con productos y cupón
-      // ============================================
-      // Calcular total: (999.99 * 1) + (29.99 * 2) + (79.99 * 1) = 1139.96
-      // Con descuento del 10%: 1139.96 * 0.9 = 1025.964
-      const totalBeforeDiscount = 999.99 + (29.99 * 2) + 79.99;
-      const expectedDiscount = totalBeforeDiscount * 0.1;
-      const expectedTotal = totalBeforeDiscount - expectedDiscount;
-
+      // Act - Create transaction with products and coupon
       const transactionData = {
         total: expectedTotal,
         coupon: createdCoupon.name,
         contents: [
-          { productId: createdProducts[0].id, quantity: 1, price: 999.99 },
-          { productId: createdProducts[1].id, quantity: 2, price: 29.99 },
-          { productId: createdProducts[2].id, quantity: 1, price: 79.99 },
+          {
+            productId: createdProducts[0].id,
+            quantity: 1,
+            price: 999.99,
+          },
+          {
+            productId: createdProducts[1].id,
+            quantity: 2,
+            price: 29.99,
+          },
+          {
+            productId: createdProducts[2].id,
+            quantity: 1,
+            price: 79.99,
+          },
         ],
       };
-
       const transactionResponse = await request(app.getHttpServer())
         .post('/transactions')
         .send(transactionData)
         .expect(201);
 
-      // El servicio retorna un string, pero la transacción se guardó en la BD
-      expect(transactionResponse.body).toBe('Sale storaged correctly');
+      // Assert
+      expect(transactionResponse.text || transactionResponse.body).toBe('Sale storaged correctly');
+      expect(createdCategory).toHaveProperty('id');
+      expect(createdCategory.name).toBe('Electrónica');
 
-      // Obtener la transacción de la BD para verificar
-      const transactions = await dataSource
-        .getRepository(Transaction)
-        .find({
-          relations: ['contents', 'contents.product'],
-          order: { id: 'DESC' },
-          take: 1,
-        });
-      
+      // Verify category was saved successfully
+      const categoryInDb = await dataSource.getRepository(Category).findOne({
+        where: {
+          id: createdCategory.id,
+        },
+      });
+      expect(categoryInDb).toBeDefined();
+
+      // Verify the products saved with correct category
+      const productsInDb = await dataSource.getRepository(Product).find({
+        where: {
+          id: In(createdProducts.map((p) => p.id)),
+        },
+      });
+      expect(productsInDb).toHaveLength(3);
+      createdProducts.forEach((product) => {
+        expect(product).toHaveProperty('id');
+      });
+
+      // Verify coupon was created
+      expect(createdCoupon).toHaveProperty('id');
+      expect(createdCoupon.name).toBe('DESCUENTO10');
+      expect(createdCoupon.percentage).toBe(10);
+
+      // Verify transaction was saved successfully
+      const transactions = await dataSource.getRepository(Transaction).find({
+        relations: ['contents', 'contents.product'],
+        order: {
+          id: 'DESC',
+        },
+        take: 1,
+      });
       createdTransaction = transactions[0];
       expect(createdTransaction).toBeDefined();
       expect(createdTransaction.total).toBeCloseTo(expectedTotal, 2);
@@ -197,127 +207,135 @@ describe('Flujo Completo POS (E2E)', () => {
       expect(createdTransaction.discount).toBeCloseTo(expectedDiscount, 2);
       expect(createdTransaction.contents).toHaveLength(3);
 
-      // ============================================
-      // PASO 5: Verificar que el inventario se actualizó
-      // ============================================
-      const updatedProducts = await dataSource
-        .getRepository(Product)
-        .find({ where: { id: In(createdProducts.map(p => p.id)) } });
-
-      // Laptop: 10 - 1 = 9
-      const laptop = updatedProducts.find(p => p.id === createdProducts[0].id);
-      expect(laptop?.inventory).toBe(9);
-
-      // Mouse: 50 - 2 = 48
-      const mouse = updatedProducts.find(p => p.id === createdProducts[1].id);
-      expect(mouse?.inventory).toBe(48);
-
-      // Teclado: 30 - 1 = 29
-      const keyboard = updatedProducts.find(p => p.id === createdProducts[2].id);
+      // Verify inventory was updated successfully
+      const updatedProducts = await dataSource.getRepository(Product).find({
+        where: {
+          id: In(createdProducts.map((p) => p.id)),
+        },
+      });
+      const laptop = updatedProducts.find((p) => p.id === createdProducts[0].id);
+      expect(laptop?.inventory).toBe(9); // 10 - 1 = 9
+      const mouse = updatedProducts.find((p) => p.id === createdProducts[1].id);
+      expect(mouse?.inventory).toBe(48); // 50 - 2 = 48
+      const keyboard = updatedProducts.find((p) => p.id === createdProducts[2].id);
       expect(keyboard?.inventory).toBe(29);
+      // 30 - 1 = 29
 
-      // ============================================
-      // PASO 6: Verificar que la transacción se puede recuperar
-      // ============================================
+      // Verify transaction can be retrieved
       const getTransactionResponse = await request(app.getHttpServer())
         .get(`/transactions/${createdTransaction.id}`)
         .expect(200);
-
       expect(getTransactionResponse.body.id).toBe(createdTransaction.id);
       expect(getTransactionResponse.body.contents).toHaveLength(3);
       expect(getTransactionResponse.body.contents[0].product).toBeDefined();
       expect(getTransactionResponse.body.contents[0].product.name).toBe('Laptop');
     });
 
-    it('debería crear una transacción sin cupón', async () => {
-      // Crear categoría
+    it('Should create transaction without coupon', async () => {
+      // Arrange
+      const categoryData = {
+        name: 'Ropa',
+      };
+      const productData = {
+        name: 'Camiseta',
+        price: 19.99,
+        inventory: 100,
+        categoryId: 0,
+      };
+      const transactionData = {
+        total: 19.99,
+        contents: [
+          {
+            productId: 0,
+            quantity: 1,
+            price: 19.99,
+          },
+        ],
+      };
+
+      // Act - Create category
       const categoryResponse = await request(app.getHttpServer())
         .post('/categories')
-        .send({ name: 'Ropa' })
+        .send(categoryData)
         .expect(201);
 
-      // Crear producto
+      // Act - Create product
+      productData.categoryId = categoryResponse.body.id;
       const productResponse = await request(app.getHttpServer())
         .post('/products')
-        .send({
-          name: 'Camiseta',
-          price: 19.99,
-          inventory: 100,
-          categoryId: categoryResponse.body.id,
-        })
+        .send(productData)
         .expect(201);
 
-      // Crear transacción sin cupón
+      // Act - Create transaction without coupon
+      transactionData.contents[0].productId = productResponse.body.id;
       const transactionResponse = await request(app.getHttpServer())
         .post('/transactions')
-        .send({
-          total: 19.99,
-          contents: [
-            { productId: productResponse.body.id, quantity: 1, price: 19.99 },
-          ],
-        })
+        .send(transactionData)
         .expect(201);
 
-      expect(transactionResponse.body).toBe('Sale storaged correctly');
+      // Assert
+      expect(transactionResponse.text || transactionResponse.body).toBe('Sale storaged correctly');
 
-      // Verificar en la BD
-      const transactions = await dataSource
-        .getRepository(Transaction)
-        .find({
-          relations: ['contents'],
-          order: { id: 'DESC' },
-          take: 1,
-        });
-      
+      // Verify transaction in database
+      const transactions = await dataSource.getRepository(Transaction).find({
+        relations: ['contents'],
+        order: {
+          id: 'DESC',
+        },
+        take: 1,
+      });
       const transaction = transactions[0];
       expect(transaction.coupon).toBeNull();
       expect(transaction.discount).toBe(0);
       expect(transaction.total).toBe(19.99);
     });
 
-    it('debería fallar si intenta crear transacción con producto inexistente', async () => {
-      await request(app.getHttpServer())
-        .post('/transactions')
-        .send({
-          total: 100,
-          contents: [
-            { productId: 99999, quantity: 1, price: 100 },
-          ],
-        })
-        .expect(400); // O el código de error que tu API retorne
-    });
+    it('Should fail trying buy when quantity is more than inventory', async () => {
+      // Arrange
+      const categoryData = {
+        name: 'Test',
+      };
+      const productData = {
+        name: 'Producto Limitado',
+        price: 10,
+        inventory: 5,
+        categoryId: 0,
+      };
+      const transactionData = {
+        total: 100,
+        contents: [
+          {
+            productId: 0,
+            quantity: 10,
+            price: 10,
+          },
+        ],
+      };
 
-    it('debería fallar si intenta crear transacción con inventario insuficiente', async () => {
-      // Crear categoría
+      // Act - Create category
       const categoryResponse = await request(app.getHttpServer())
         .post('/categories')
-        .send({ name: 'Test' })
+        .send(categoryData)
         .expect(201);
 
-      // Crear producto con inventario limitado
+      // Act - Create product with limited inventory
+      productData.categoryId = categoryResponse.body.id;
       const productResponse = await request(app.getHttpServer())
         .post('/products')
-        .send({
-          name: 'Producto Limitado',
-          price: 10,
-          inventory: 5, // Solo 5 disponibles
-          categoryId: categoryResponse.body.id,
-        })
+        .send(productData)
         .expect(201);
 
-      // Intentar comprar más de lo disponible
+      // Act - Try to buy more quantity than available inventory
+      transactionData.contents[0].productId = productResponse.body.id;
       const errorResponse = await request(app.getHttpServer())
         .post('/transactions')
-        .send({
-          total: 100,
-          contents: [
-            { productId: productResponse.body.id, quantity: 10, price: 10 }, // Intentar comprar 10
-          ],
-        })
-        .expect(400); // BadRequestException por inventario insuficiente
-      
-      expect(errorResponse.body.message).toContain('exced the enable quantity');
+        .send(transactionData)
+        .expect(400);
+
+      // Assert
+      expect(errorResponse.body.message).toStrictEqual([
+        'The product Producto Limitado exced the enable quantity',
+      ]);
     });
   });
 });
-

@@ -14,12 +14,12 @@ describe('AppService', () => {
 
   describe('getHello', () => {
     it('should return "Hello World!"', () => {
-      // Arrange: No necesitamos datos de entrada
-      
-      // Act: Llamamos al método
+      // Arrange - No input data needed
+
+      // Act
       const result = service.getHello();
-      
-      // Assert: Verificamos el resultado
+
+      // Assert
       expect(result).toBe('Hello World!');
       expect(typeof result).toBe('string');
       expect(result).toHaveLength(12);
@@ -28,28 +28,36 @@ describe('AppService', () => {
 
   describe('putHello', () => {
     it('should return "Hola put"', () => {
+      // Arrange - No input data needed
+
+      // Act
       const result = service.putHello();
+
+      // Assert
       expect(result).toBe('Hola put');
     });
   });
 
   describe('patchHello', () => {
     it('should return "hola patch"', () => {
+      // Arrange - No input data needed
+
+      // Act
       const result = service.patchHello();
+
+      // Assert
       expect(result).toBe('hola patch');
     });
   });
 
-  // Ejemplo de test con múltiples verificaciones
+  // Example test with multiple verifications
   describe('all methods return strings', () => {
     it('should return strings from all methods', () => {
-      const methods = [
-        service.getHello(),
-        service.putHello(),
-        service.patchHello()
-      ];
+      // Arrange
+      const methods = [service.getHello(), service.putHello(), service.patchHello()];
 
-      methods.forEach(method => {
+      // Act & Assert
+      methods.forEach((method) => {
         expect(typeof method).toBe('string');
         expect(method.length).toBeGreaterThan(0);
       });

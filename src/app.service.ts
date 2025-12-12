@@ -5,10 +5,10 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
-  putHello():string {
+  putHello(): string {
     return 'Hola put';
   }
-  patchHello(): string{
-    return 'hola patch'
+  patchHello(): string {
+    return 'hola patch';
   }
 }

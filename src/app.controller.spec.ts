@@ -18,26 +18,36 @@ describe('AppController', () => {
 
   describe('getHello', () => {
     it('should return "Hello World!"', () => {
-      // Arrange: No necesitamos preparar nada especial
-      
-      // Act: Ejecutamos el método
+      // Arrange - No special setup needed
+
+      // Act
       const result = appController.getHello();
-      
-      // Assert: Verificamos el resultado
+
+      // Assert
       expect(result).toBe('Hello World!');
     });
   });
 
   describe('putHello', () => {
     it('should return "Hola put"', () => {
+      // Arrange - No special setup needed
+
+      // Act
       const result = appController.putHello();
+
+      // Assert
       expect(result).toBe('Hola put');
     });
   });
 
   describe('patchHello', () => {
     it('should return "hola patch"', () => {
+      // Arrange - No special setup needed
+
+      // Act
       const result = appController.patchHello();
+
+      // Assert
       expect(result).toBe('hola patch');
     });
   });

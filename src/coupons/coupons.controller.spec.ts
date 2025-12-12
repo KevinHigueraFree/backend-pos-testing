@@ -1,188 +1,197 @@
-// @ts-nocheck
-import { Test, TestingModule } from "@nestjs/testing";
-import { CouponsService } from "./coupons.service";
-import { CouponsController } from "./coupons.controller";
-import { testInvalidIdWithServiceValidation } from "../common/test-helpers/validation-test.helper";
+import { Test, TestingModule } from '@nestjs/testing';
+import { CouponsService } from './coupons.service';
+import { CouponsController } from './coupons.controller';
+import { testInvalidIdWithServiceValidation } from '../common/test-helpers/validation-test.helper';
 import {
-    coupons,
-    couponCreateDtos,
-    couponUpdateDtos, getCouponById, getCouponUpdatedByIdAndDto, getCouponByName
-} from "../common/test-data";
-import { NotFoundException, UnprocessableEntityException } from "@nestjs/common";
+  coupons,
+  couponCreateDtos,
+  couponUpdateDtos,
+  getCouponById,
+  getCouponUpdatedByIdAndDto,
+  getCouponByName,
+} from '../common/test-data';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { Coupon } from './entities/coupon.entity';
 
 describe('CouponsController', () => {
-    let couponsController: CouponsController;
-    let couponsService: CouponsService;
+  let couponsController: CouponsController;
+  let couponsService: CouponsService;
 
-    // Mock del repository de cupones
-    const mockCouponsService = {
-        create: jest.fn(),
-        findAll: jest.fn(),
-        findOne: jest.fn(),
-        update: jest.fn(),
-        remove: jest.fn(),
-        applyCoupon: jest.fn(),
-    };
+  // Mock of coupons repository
+  const mockCouponsService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    applyCoupon: jest.fn(),
+  };
 
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CouponsController],
+      providers: [
+        {
+          provide: CouponsService,
+          useValue: mockCouponsService,
+        },
+      ],
+    }).compile();
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            controllers: [CouponsController],
-            providers: [
-                {
-                    provide: CouponsService,
-                    useValue: mockCouponsService,
-                },
-            ],
-        }).compile();
+    couponsController = module.get<CouponsController>(CouponsController);
+    couponsService = module.get<CouponsService>(CouponsService);
+  });
 
-        couponsController = module.get<CouponsController>(CouponsController);
-        couponsService = module.get<CouponsService>(CouponsService);
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('should create a new coupon', async () => {
+      // Arrange
+      const couponCreateDto = couponCreateDtos[0];
+      const expectedCoupon: Coupon = { ...couponCreateDto, id: 1 };
+      mockCouponsService.create.mockResolvedValue(expectedCoupon);
+
+      // Act
+      const result = await couponsController.create(couponCreateDto);
+
+      // Assert
+      expect(couponsService.create).toHaveBeenCalledWith(couponCreateDto);
+      expect(result).toEqual(expectedCoupon);
     });
+  });
+  describe('findAll', () => {
+    it('should return all coupons', async () => {
+      // Arrange
+      const expectedCoupons = coupons.slice(0, 3);
+      mockCouponsService.findAll.mockResolvedValue(expectedCoupons);
 
-    afterEach(() => {
-        jest.clearAllMocks();
+      // Act
+      const result = await couponsController.findAll();
+
+      // Assert
+      expect(mockCouponsService.findAll).toHaveBeenCalled();
+      expect(result).toHaveLength(expectedCoupons.length);
+      expect(result).toEqual(expectedCoupons);
     });
+  });
+  describe('findOne', () => {
+    it('Should return the found coupon', async () => {
+      // Arrange
+      const couponId = '1';
+      const expectedCoupon = getCouponById(+couponId);
+      mockCouponsService.findOne.mockResolvedValue(expectedCoupon);
 
+      // Act
+      const result = await couponsController.findOne(couponId);
 
-    describe('create', () => {
-        it('should create a new coupon', async () => {
-            const couponCreateDto = couponCreateDtos[0]
-            const expectedCoupon: Coupon = { ...couponCreateDto, id: 1 }
-            mockCouponsService.create.mockResolvedValue(expectedCoupon)
+      // Assert
+      expect(mockCouponsService.findOne).toHaveBeenCalledWith(+couponId);
+      expect(result).toEqual(expectedCoupon);
+    });
+    it('should throw BadRequestException for invalid ID in findOne and not call service', async () => {
+      // Arrange
+      const couponId = 'invalid-id';
 
-            //Act
-            const result = await couponsController.create(couponCreateDto)
+      // Act & Assert - Use reusable helper function
+      await testInvalidIdWithServiceValidation(couponId, couponsService, 'findOne');
+    });
+  });
 
-            //Assert
-            expect(couponsService.create).toHaveBeenCalledWith(couponCreateDto)
-            expect(result).toEqual(expectedCoupon)
-        })
-    })
-    describe('findAll', () => {
-        it('should return all coupons', async () => {
-            const expectedCoupons = coupons.slice(0, 3)
-            mockCouponsService.findAll.mockResolvedValue(expectedCoupons)
+  describe('update', () => {
+    it('should return updated coupon', async () => {
+      // Arrange
+      const couponId = '1';
+      const updateCouponDto = couponUpdateDtos[0];
+      const expectedCoupon = getCouponUpdatedByIdAndDto(+couponId, updateCouponDto);
+      mockCouponsService.update.mockResolvedValue(expectedCoupon);
 
-            //Act
-            const result = await couponsController.findAll()
+      // Act
+      const result = await couponsController.update(couponId, updateCouponDto);
 
-            //Asserts
-            expect(mockCouponsService.findAll).toHaveBeenCalled()
-            expect(result).toHaveLength(expectedCoupons.length)
-            expect(result).toEqual(expectedCoupons)
-        })
-    })
-    describe('findOne', () => {
-        it('Should return the found coupon', async () => {
-            const couponId = '1';
-            const expectedCoupon = getCouponById(+couponId)
-            mockCouponsService.findOne.mockResolvedValue(expectedCoupon)
+      // Assert
+      expect(mockCouponsService.update).toHaveBeenCalledWith(+couponId, updateCouponDto);
+      expect(result).toEqual(expectedCoupon);
+    });
+    it('should throw BadRequestException for invalid ID in update and not call service', async () => {
+      // Arrange
+      const couponId = 'invalid-id';
 
-            //Act
-            const result = await couponsController.findOne(couponId)
+      // Act & Assert - Use reusable helper function
+      await testInvalidIdWithServiceValidation(couponId, couponsService, 'update');
+    });
+  });
 
-            //Assert
-            expect(mockCouponsService.findOne).toHaveBeenCalledWith(+couponId)
-            expect(result).toEqual(expectedCoupon)
-        })
-        it('should throw BadRequestException for invalid ID in findOne and not call service', async () => {
-            //Arrage
-            const couponId = 'invalid-id';
+  describe('remove', () => {
+    it('should return message removed coupon', async () => {
+      // Arrange
+      const couponId = '1';
+      const expectedResponse = { message: 'Removed coupon' };
+      mockCouponsService.remove.mockResolvedValue(expectedResponse);
 
-            // Act & Assert - Usar función helper reutilizable
-            await testInvalidIdWithServiceValidation(couponId, couponsService, 'findOne');
-        })
-    })
+      // Act
+      const result = await couponsController.remove(couponId);
 
-    describe('update', () => {
-        it('should return updated coupon', async () => {
-            const couponId = '1'
-            const updateCouponDto = couponUpdateDtos[0]
-            const expectedCoupon = getCouponUpdatedByIdAndDto(+couponId, updateCouponDto)
-            mockCouponsService.update.mockResolvedValue(expectedCoupon)
+      // Assert
+      expect(mockCouponsService.remove).toHaveBeenCalledWith(+couponId);
+      expect(result).toEqual(expectedResponse);
+    });
+    it('should throw BadRequestException for invalid ID in remove and not call service', async () => {
+      // Arrange
+      const couponId = 'invalid-id';
 
-            //Act
-            const result = await couponsController.update(+couponId, updateCouponDto)
+      // Act & Assert - Use reusable helper function
+      await testInvalidIdWithServiceValidation(couponId, couponsService, 'remove');
+    });
+  });
 
-            //Assert
-            expect(mockCouponsService.update).toHaveBeenCalledWith(+couponId, updateCouponDto)
-            expect(result).toEqual(expectedCoupon)
-        })
-        it('should throw BadRequestException for invalid ID in update and not call service', async () => {
-            //Arrage
-            const couponId = 'invalid-id';
+  describe('applyCoupon', () => {
+    it('should return message valid coupon', async () => {
+      // Arrange
+      const couponName = 'navidad';
+      const applyCouponDto = { name: couponName };
+      const coupon = getCouponByName(couponName);
+      const expectedResponse = {
+        message: 'Valid coupon',
+        ...coupon,
+      };
+      mockCouponsService.applyCoupon.mockResolvedValue(expectedResponse);
 
-            // Act & Assert - Usar función helper reutilizable
-            await testInvalidIdWithServiceValidation(couponId, couponsService, 'update');
-        })
-    })
+      // Act
+      const result = await couponsController.applyCoupon(applyCouponDto);
 
-    describe('remove', () => {
-        it('should return message removed coupon', async () => {
-            const couponId = '1'
-            const expectedResponse = { message: "Removed coupon" }
-            mockCouponsService.remove.mockResolvedValue(expectedResponse)
+      // Assert
+      expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName);
+      expect(result).toEqual(expectedResponse);
+    });
+    it('Should return exception because does not found the coupon', async () => {
+      // Arrange
+      const couponName = 'nonexistent';
+      const applyCouponDto = { name: couponName };
+      const error = new NotFoundException(`The Coupon with name: ${couponName} does not found`);
+      mockCouponsService.applyCoupon.mockRejectedValue(error);
 
-            //Act
-            const result = await couponsController.remove(+couponId)
+      // Act & Assert
+      const promise = couponsController.applyCoupon(applyCouponDto);
+      await expect(promise).rejects.toThrow(NotFoundException);
 
-            //Assert
-            expect(mockCouponsService.remove).toHaveBeenCalledWith(+couponId)
-            expect(result).toEqual(expectedResponse)
-        })
-        it('should throw BadRequestException for invalid ID in remove and not call service', async () => {
-            //Arrage
-            const couponId = 'invalid-id';
+      // Additional Assert
+      expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName);
+    });
+    it('Should return exception because coupon is expired', async () => {
+      // Arrange
+      const couponName = 'expired-coupon';
+      const applyCouponDto = { name: couponName };
+      const error = new UnprocessableEntityException('Expired coupon');
+      mockCouponsService.applyCoupon.mockRejectedValue(error);
 
-            // Act & Assert - Usar función helper reutilizable
-            await testInvalidIdWithServiceValidation(couponId, couponsService, 'remove');
-        })
-    })
+      // Act & Assert
+      const promise = couponsController.applyCoupon(applyCouponDto);
+      await expect(promise).rejects.toThrow(UnprocessableEntityException);
 
-    describe('applyCoupon', () => {
-        it('should return message valid coupon', async () => {
-            const couponName = 'navidad'
-            const applyCouponDto = { name: couponName }
-            const coupon = getCouponByName(couponName)
-            const expectedResponse = {
-                message: 'Valid coupon',
-                ...coupon
-            }
-            mockCouponsService.applyCoupon.mockResolvedValue(expectedResponse)
-
-            //Act
-            const result = await couponsController.applyCoupon(applyCouponDto)
-
-            //Assert
-            expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName)
-            expect(result).toEqual(expectedResponse)
-        })
-        it('Should return exception because does not found the coupon', async () => {
-            const couponName = 'nonexistent'
-            const applyCouponDto = { name: couponName }
-            const error = new NotFoundException(`The Coupon with name: ${couponName} does not found`)
-            mockCouponsService.applyCoupon.mockRejectedValue(error)
-
-            //Act y Assert
-            const promise = couponsController.applyCoupon(applyCouponDto);
-            await expect(promise).rejects.toThrow(NotFoundException);
-
-            //Assert adicionales
-            expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName)
-        })
-        it('Should return exception because coupon is expired', async () => {
-            const couponName = 'expired-coupon'
-            const applyCouponDto = { name: couponName }
-            const error = new UnprocessableEntityException('Expired coupon')
-            mockCouponsService.applyCoupon.mockRejectedValue(error)
-
-            //Act y Assert
-            const promise = couponsController.applyCoupon(applyCouponDto);
-            await expect(promise).rejects.toThrow(UnprocessableEntityException);
-
-            //Assert adicionales
-            expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName)
-        })
-    })
-})
+      // Additional Assert
+      expect(mockCouponsService.applyCoupon).toHaveBeenCalledWith(couponName);
+    });
+  });
+});

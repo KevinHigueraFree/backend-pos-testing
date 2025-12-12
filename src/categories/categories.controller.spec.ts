@@ -5,20 +5,20 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { NotFoundException } from '@nestjs/common';
 import { testInvalidIdWithServiceValidation } from '../common/test-helpers/validation-test.helper';
-import { 
-  categories, 
-  categoryCreateDtos, 
-  categoryUpdateDtos, 
+import {
+  categories,
+  categoryCreateDtos,
+  categoryUpdateDtos,
   categoriesWithProducts,
   getCategoryById,
-  getCategoryUpdatedByIdAndDto
+  getCategoryUpdatedByIdAndDto,
 } from '../common/test-data';
 
 describe('CategoriesController', () => {
   let controller: CategoriesController;
   let service: CategoriesService;
 
-  // Mock del servicio
+  // Mock of service
   const mockCategoriesService = {
     create: jest.fn(),
     findAll: jest.fn(),
@@ -95,17 +95,19 @@ describe('CategoriesController', () => {
     it('should handle NotFoundException', async () => {
       // Arrange
       const categoryId = '999';
-      mockCategoriesService.findOne.mockRejectedValue(new NotFoundException(`The Category with ID ${categoryId} does not found`));
+      mockCategoriesService.findOne.mockRejectedValue(
+        new NotFoundException(`The Category with ID ${categoryId} does not found`)
+      );
 
       // Act & Assert
       await expect(controller.findOne(categoryId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for invalid ID and not call service', async () => {
-      //Arrage
+      // Arrange
       const categoryId = 'invalid-id';
 
-      // Act & Assert - Usar función helper reutilizable
+      // Act & Assert - Use reusable helper function
       await testInvalidIdWithServiceValidation(categoryId, service, 'findOne');
     });
   });
@@ -130,17 +132,21 @@ describe('CategoriesController', () => {
       // Arrange
       const categoryId = '999';
       const updateCategoryDto: UpdateCategoryDto = { name: 'Updated' };
-      mockCategoriesService.update.mockRejectedValue(new NotFoundException('The category does not found'));
+      mockCategoriesService.update.mockRejectedValue(
+        new NotFoundException('The category does not found')
+      );
 
       // Act & Assert
-      await expect(controller.update(categoryId, updateCategoryDto)).rejects.toThrow(NotFoundException);
+      await expect(controller.update(categoryId, updateCategoryDto)).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw BadRequestException for invalid ID in update and not call service', async () => {
-      //Arrage
+      // Arrange
       const categoryId = 'invalid-id';
 
-      // Act & Assert - Usar función helper reutilizable
+      // Act & Assert - Use reusable helper function
       await testInvalidIdWithServiceValidation(categoryId, service, 'update');
     });
   });
@@ -163,17 +169,19 @@ describe('CategoriesController', () => {
     it('should handle NotFoundException when removing', async () => {
       // Arrange
       const categoryId = '999';
-      mockCategoriesService.remove.mockRejectedValue(new NotFoundException('The category does not found'));
+      mockCategoriesService.remove.mockRejectedValue(
+        new NotFoundException('The category does not found')
+      );
 
       // Act & Assert
       await expect(controller.remove(categoryId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for invalid ID in remove and not call service', async () => {
-      //Arrage
+      // Arrange
       const categoryId = 'invalid-id';
 
-      // Act & Assert - Usar función helper reutilizable
+      // Act & Assert - Use reusable helper function
       await testInvalidIdWithServiceValidation(categoryId, service, 'remove');
     });
   });

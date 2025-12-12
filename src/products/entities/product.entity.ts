@@ -1,24 +1,23 @@
-import { Category } from "../../categories/entities/category.entity";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Category } from '../../categories/entities/category.entity';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Product {
-    @PrimaryGeneratedColumn()
-    id:number
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({type:'varchar', length: 60})
-    name:string
+  @Column({ type: 'varchar', length: 60 })
+  name: string;
 
-    @Column({type: 'varchar', length:120, nullable: true, default:'default.svg'})
-    image:string
+  @Column({ type: 'varchar', length: 120, nullable: true, default: 'default.svg' })
+  image: string;
 
-    @Column({type: 'decimal'})
-    price: number
-    
-    @Column({type: 'int'})
-    inventory: number
+  @Column({ type: 'decimal' })
+  price: number;
 
-    @ManyToOne(() => Category )//, {eager:true}) // con eager hace que siempre traiga los datos relacionados
-    category: Category
+  @Column({ type: 'int' })
+  inventory: number;
 
+  @ManyToOne(() => Category, { nullable: true, onDelete: 'SET NULL' }) //, {eager:true}) // con eager hace que siempre traiga los datos relacionados
+  category: Category;
 }

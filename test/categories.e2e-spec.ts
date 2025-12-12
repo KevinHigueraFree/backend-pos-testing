@@ -12,69 +12,71 @@ import { testInvalidIdE2E } from './helpers/e2e-test.helper';
 import { CategoryTestHelper } from './helpers/category-test.helper';
 import { ResponseTestHelper } from './helpers/response-test.helper';
 
-describe('CategoriesController (e2e) - Tests de Integración', () => {
+describe('CategoriesController (e2e) - Integration Tests', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
   let testHelper: CategoryTestHelper;
 
-  // ANTES DE TODOS LOS TESTS: Configurar la base de datos de prueba
+  // BEFORE ALL TESTS: Configure test database
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        // Importar el módulo de categories
+        // Import categories module
         CategoriesModule,
-        // Configurar TypeORM para tests (usando SQLite en memoria)
+        // Configure TypeORM for tests (using SQLite in memory)
         TypeOrmModule.forRoot({
           type: 'sqlite',
-          database: ':memory:', // Base de datos en memoria (se borra al terminar)
-          entities: [Category, Product], // Incluir todas las entidades relacionadas
-          synchronize: true, // Crear tablas automáticamente
-          dropSchema: true, // Borrar esquema antes de cada test
+          database: ':memory:', // Database in memory (deleted when finished)
+          entities: [Category, Product], // Include all related entities
+          synchronize: true, // Create tables automatically
+          dropSchema: true, // Drop schema before each test
         }),
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    // Agregar ValidationPipe global para que funcione la validación
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-    }));
+    // Add global ValidationPipe for validation to work
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+      })
+    );
     await app.init();
 
-    // Obtener la conexión a la base de datos para limpiar datos
+    // Get database connection to clean data
     dataSource = moduleFixture.get<DataSource>(DataSource);
     testHelper = new CategoryTestHelper(dataSource);
   });
 
-  // DESPUÉS DE CADA TEST: Limpiar la base de datos
+  // AFTER EACH TEST: Clean the database
   afterEach(async () => {
-    // Limpiar todas las categorías después de cada test
+    // Clean all categories after each test
     await dataSource.getRepository(Category).clear();
   });
 
-  // DESPUÉS DE TODOS LOS TESTS: Cerrar la aplicación
+  // AFTER ALL TESTS: Close the application
   afterAll(async () => {
     await app.close();
   });
 
   describe('POST /categories', () => {
     it('Should return 201, when create a category', async () => {
-      // Arrange: Preparar los datos
+      // Arrange: Prepare the data
       const createCategoryDto = {
         name: 'Electrónica',
       };
 
-      // Act: Hacer la petición HTTP real
+      // Act: Make the real HTTP request
       const response = await request(app.getHttpServer())
         .post('/categories')
         .send(createCategoryDto)
-        .expect(201); // Esperar código 201 (Created)
+        .expect(201); // Expect status code 201 (Created)
 
-      // Assert: Verificar la respuesta
+      // Assert: Verify the response
       expect(response.body).toHaveProperty('id');
       expect(response.body.name).toBe(createCategoryDto.name);
 
-      // Verificar que realmente se guardó en la base de datos
+      // Verify that it was actually saved in the database
       const categoryInDb = await dataSource
         .getRepository(Category)
         .findOne({ where: { id: response.body.id } });
@@ -84,34 +86,34 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
     });
 
     it('Should return error when name is empty', async () => {
-      //Arrange
+      // Arrange
       const createCategoryDto = {
-        name: ''
+        name: '',
       };
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .post('/categories')
         .send(createCategoryDto)
         .expect(400);
 
-      //Assert
+      // Assert
       ResponseTestHelper.expectBadRequest(response, ['The name is required']);
     });
 
     it('Should return error when name is not string', async () => {
-      //Arrange
+      // Arrange
       const createCategoryDto = {
-        name: 20
+        name: 20,
       };
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .post('/categories')
         .send(createCategoryDto)
         .expect(400);
 
-      //Assert
+      // Assert
       ResponseTestHelper.expectBadRequest(response, ['Invalid name']);
     });
   });
@@ -119,9 +121,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
   describe('GET /categories', () => {
     it('Shoudl return empty array, when there are not categories', async () => {
       // Act
-      const response = await request(app.getHttpServer())
-        .get('/categories')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/categories').expect(200);
 
       // Assert
       expect(response.body).toEqual([]);
@@ -129,25 +129,22 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
     });
 
     it('Should return 200, when find all categories', async () => {
-      // Arrange: Crear categorías directamente en la BD
+      // Arrange: Create categories directly in the database
       await testHelper.createCategories(3);
 
       // Act
-      const response = await request(app.getHttpServer())
-        .get('/categories')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/categories').expect(200);
 
       // Assert
       expect(response.body).toHaveLength(3);
       expect(response.body[0]).toHaveProperty('id');
       expect(response.body[0]).toHaveProperty('name');
     });
-
   });
 
   describe('GET /categories/:id', () => {
     it('Should return 200, when category was found', async () => {
-      // Arrange: Crear una categoría en la BD
+      // Arrange: Create a category in the database
       const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
 
       // Act
@@ -161,7 +158,7 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
     });
 
     it('Shoudl return 404, when categorie was not found', async () => {
-      const categoryId = 999
+      const categoryId = 999;
       // Act & Assert
       const response = await request(app.getHttpServer())
         .get(`/categories/${categoryId}`)
@@ -176,106 +173,111 @@ describe('CategoriesController (e2e) - Tests de Integración', () => {
     it('Should return 400 when invalid id', async () => {
       // Act & Assert
       await testInvalidIdE2E(app, 'get', '/categories');
-    })
+    });
   });
 
   describe('PATCH /categories/:id', () => {
     it('Should return 200 when category was updated succesfully', async () => {
-      //Arrange
+      // Arrange
       const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
       const updateCategoryDto: UpdateCategoryDto = {
-        name: 'Electronica actualizada'
+        name: 'Electronica actualizada',
       };
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .patch(`/categories/${savedCategory.id}`)
         .send(updateCategoryDto)
         .expect(200);
 
-      //Assert
+      // Assert
       expect(response.body).toHaveProperty('id');
       expect(response.body.id).toBe(savedCategory.id);
       expect(response.body.name).toBe(updateCategoryDto.name);
 
-      // Verificar que realmente se actualizó en la base de datos
+      // Verify that it was actually updated in the database
       const categoryRepository = dataSource.getRepository(Category);
       const updatedCategoryInDb = await categoryRepository.findOne({
-        where: { id: savedCategory.id }
+        where: { id: savedCategory.id },
       });
       expect(updatedCategoryInDb).toBeDefined();
       expect(updatedCategoryInDb?.name).toBe(updateCategoryDto.name);
     });
 
     it('Should return 404 when category to update were not found', async () => {
-      //Arrange
-      const categoryId = 999
+      // Arrange
+      const categoryId = 999;
       const updateCategoryDto: UpdateCategoryDto = {
-        name: 'Electronica actualizada'
+        name: 'Electronica actualizada',
       };
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .patch(`/categories/${categoryId}`)
         .send(updateCategoryDto)
         .expect(404);
 
-      //Assert
-      ResponseTestHelper.expectNotFound(response, `The Category with ID ${categoryId} does not found`);
+      // Assert
+      ResponseTestHelper.expectNotFound(
+        response,
+        `The Category with ID ${categoryId} does not found`
+      );
     });
 
     it('Should return 400 when invalid id', async () => {
       // Arrange
       const updateCategoryDto: UpdateCategoryDto = {
-        name: 'Electronica actualizada'
+        name: 'Electronica actualizada',
       };
 
       // Act & Assert
       await testInvalidIdE2E(app, 'patch', '/categories', 'invalid-id', updateCategoryDto);
-    })
-  })
+    });
+  });
 
   describe('DELETE /categories/:id', () => {
     it('Should return 200 when category was removed successfully', async () => {
-      //Arrange
+      // Arrange
       const savedCategory = await testHelper.createCategory({ name: 'Electrónica' });
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .delete(`/categories/${savedCategory.id}`)
         .expect(200);
 
-      //Assert
-      // NestJS puede retornar strings como texto plano, verificamos response.text
+      // Assert
+      // NestJS may return strings as plain text, we check response.text
       const expectedMessage = `The Category with ID ${savedCategory.id} was removed`;
-      // Cuando NestJS retorna un string, puede estar en response.text en lugar de response.body
+      // When NestJS returns a string, it may be in response.text instead of response.body
       expect(response.text || response.body).toBe(expectedMessage);
 
-      // Verificar que realmente se eliminó en la base de datos
+      // Verify that it was actually deleted from the database
       const categoryRepository = dataSource.getRepository(Category);
       const removedCategoryInDb = await categoryRepository.findOne({
-        where: { id: savedCategory.id }
+        where: { id: savedCategory.id },
       });
       expect(removedCategoryInDb).toBeNull();
     });
 
     it('Should return 404 when category to delete was not found', async () => {
-      //Arrange
+      // Arrange
       const categoryId = 999;
 
-      //Act
+      // Act
       const response = await request(app.getHttpServer())
         .delete(`/categories/${categoryId}`)
         .expect(404);
 
-      //Assert
-      ResponseTestHelper.expectNotFound(response, `The Category with ID ${categoryId} does not found`);
+      // Assert
+      ResponseTestHelper.expectNotFound(
+        response,
+        `The Category with ID ${categoryId} does not found`
+      );
     });
 
     it('Should return 400 when invalid id', async () => {
       // Act & Assert
       await testInvalidIdE2E(app, 'delete', '/categories');
-    })
+    });
   });
 });
-

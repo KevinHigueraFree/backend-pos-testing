@@ -1,6 +1,1 @@
-export const categories = [
-    { "name": "Sudaderas" },
-    { "name": "Tenis" },
-    { "name": "Lentes" }
-
-]
+export const categories = [{ name: 'Sudaderas' }, { name: 'Tenis' }, { name: 'Lentes' }];

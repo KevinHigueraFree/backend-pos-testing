@@ -11,19 +11,18 @@ import { CouponsModule } from './coupons/coupons.module';
 import { SeederModule } from './seeder/seeder.module';
 
 @Module({
-	imports: [
-		ConfigModule.forRoot(
-			{ isGlobal: true }
-		),
-		TypeOrmModule.forRootAsync(
-			{
-				useFactory: typeOrmConfig, // para dar acceso a config services, es util cuando la configuracion depende de valores dinamicos
-				inject: [ConfigService]
-			}
-		), // para que esté disponible para categorias, debe estar antes-
-		CategoriesModule, ProductsModule, TransactionsModule, CouponsModule,
-	],
-	controllers: [AppController],
-	providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      useFactory: typeOrmConfig, // para dar acceso a config services, es util cuando la configuracion depende de valores dinamicos
+      inject: [ConfigService],
+    }), // para que esté disponible para categorias, debe estar antes-
+    CategoriesModule,
+    ProductsModule,
+    TransactionsModule,
+    CouponsModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

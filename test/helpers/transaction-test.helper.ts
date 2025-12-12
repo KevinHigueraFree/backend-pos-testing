@@ -7,7 +7,11 @@ import { CreateCategoryDto } from '../../src/categories/dto/create-category.dto'
 import { CreateProductDto } from '../../src/products/dto/create-product.dto';
 import { CreateCouponDto } from '../../src/coupons/dto/create-coupon.dto';
 import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
-import { categoryCreateDtos, productCreateDtos, couponCreateDtos } from '../../src/common/test-data';
+import {
+  categoryCreateDtos,
+  productCreateDtos,
+  couponCreateDtos,
+} from '../../src/common/test-data';
 import { addDays } from 'date-fns';
 
 /**
@@ -28,7 +32,11 @@ export class TransactionTestHelper {
   /**
    * Crea un producto de prueba asociado a una categoría
    */
-  async createProduct(category: Category, dto?: CreateProductDto, overrides?: Partial<Product>): Promise<Product> {
+  async createProduct(
+    category: Category,
+    dto?: CreateProductDto,
+    overrides?: Partial<Product>
+  ): Promise<Product> {
     const productRepository = this.dataSource.getRepository(Product);
     const createDto = dto || productCreateDtos[0];
     return await productRepository.save({ ...createDto, category, ...overrides });
@@ -54,7 +62,7 @@ export class TransactionTestHelper {
     const createDto = dto || couponCreateDtos[0];
     return await couponRepository.save({
       ...createDto,
-      expirationDate: addDays(new Date(), daysFromNow) as any
+      expirationDate: addDays(new Date(), daysFromNow),
     });
   }
 
@@ -106,16 +114,16 @@ export class TransactionTestHelper {
     const contents = products.map((product, index) => ({
       productId: product.id,
       quantity: options?.quantities?.[index] || 1,
-      price: options?.prices?.[index] || product.price
+      price: options?.prices?.[index] || product.price,
     }));
 
-    const total = options?.total || contents.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const total =
+      options?.total || contents.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
     return {
       total,
       coupon: options?.coupon,
-      contents
+      contents,
     } as CreateTransactionDto;
   }
 }
-
